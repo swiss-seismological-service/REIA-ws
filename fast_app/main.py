@@ -1,5 +1,4 @@
 import time
-from pyppeteer import launch
 from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -62,39 +61,3 @@ def create_losses_for_earthquake(
         loss: schemas.LossesBase, db: Session = Depends(get_db)):
     return crud.create_cantonal_losses(
         db=db, losses=loss, earthquake_id=earthquake_id)
-
-
-@app.get("/pdf", response_class=FileResponse)
-async def main():
-    some_file_path = "fast_app/pdfs/schaden.pdf"
-
-    browser = await launch()
-    page = await browser.newPage()
-    await page.emulateMedia("print")
-    await page.goto('http://localhost:5000')
-
-    watchDog = page.waitForFunction('window.status === "ready_to_print"')
-    await watchDog
-    await page.pdf({'path': 'fast_app/pdfs/schaden.pdf',
-                    'preferCSSPageSize': True, 'printBackground': True})
-    await browser.close()
-
-    return some_file_path
-
-
-@app.get("/pdf_ocms", response_class=FileResponse)
-async def pdf_ocms():
-    some_file_path = "fast_app/pdfs/schaden.pdf"
-
-    browser = await launch()
-    page = await browser.newPage()
-    await page.emulateMedia("print")
-    await page.goto('http://localhost/mercury-json/demo-schaden/')
-
-    watchDog = page.waitForFunction('window.status === "ready_to_print"')
-    await watchDog
-    await page.pdf({'path': 'fast_app/pdfs/schaden.pdf',
-                    'preferCSSPageSize': True, 'printBackground': True})
-    await browser.close()
-
-    return some_file_path
