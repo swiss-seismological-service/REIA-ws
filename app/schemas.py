@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
-from esloss.datamodel import EEarthquakeType, ELossCategory
+from esloss.datamodel import EEarthquakeType, ELossCategory, EStatus
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
 from sqlalchemy.inspection import inspect
@@ -31,13 +31,14 @@ def real_value_factory(quantity_type: type) -> Type[BaseModel]:
 
 class ValueGetter(GetterDict):
     def get(self, key: str, default: Any) -> Any:
-        # get SQLAlchemy's column names.
-        cols = self._obj.__table__.columns.keys()
-        cols += inspect(type(self._obj)).relationships.keys()
-
         # if the key-col mapping is 1:1 just return the value
-        if key in cols:
+        if hasattr(self._obj, key):
             return getattr(self._obj, key, default)
+
+        # get this SQLAlchemy objects' column names.
+        inspected = inspect(type(self._obj))
+        cols = [c.name for c in inspected.columns]
+        cols += inspected.relationships.keys()
 
         # else it's probably a sub value
         # get all column names which are present for this key
@@ -95,18 +96,36 @@ class AggregatedLossSchema(BaseModel):
         getter_dict = ValueGetter
 
 
+class LossCalculationSchema(BaseModel):
+    oid: int = Field(..., alias='_oid')
+    aggregateby: list[str]
+    config: dict
+    creationinfo: CreationInfo
+    status: EStatus
+    description: Optional[str]
+    type: str = Field(..., alias='_type')
+
+    class Config:
+        getter_dict = ValueGetter
+
+
+class RiskCalculationSchema(LossCalculationSchema):
+    pass
+
+
 class EarthquakeInformationSchema(BaseModel):
     oid: int = Field(..., alias='_oid')
     depth: Optional[RealFloatValue]
     longitude: Optional[RealFloatValue]
     latitude: Optional[RealFloatValue]
-    creationinfo: Optional[CreationInfo]
+    creationinfo: CreationInfo
     time: Optional[datetime]
     eventid: str
     magnitude: Optional[float]
     evaluationmethod: Optional[str]
     hazardlevel: Optional[int]
     type: EEarthquakeType
+    losscalculation: list[LossCalculationSchema]
 
     class Config:
         getter_dict = ValueGetter
