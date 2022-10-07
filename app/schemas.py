@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Any, List, Optional, Type
 
-from esloss.datamodel.lossvalues import ELossCategory
-from pydantic import BaseConfig, BaseModel, create_model
+from esloss.datamodel import EEarthquakeType, ELossCategory
+from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
 from sqlalchemy.inspection import inspect
 
@@ -56,6 +57,26 @@ class RealFloatValue(real_value_factory(float)):
     pass
 
 
+def creationinfo_factory() -> Type[BaseModel]:
+    _func_map = dict([
+        ('author', (Optional[str], None)),
+        ('agencyid', (Optional[str], None)),
+        ('creationtime', (Optional[datetime], None)),
+        ('version', (Optional[str], None)),
+        ('copyrightowner', (Optional[str], None)),
+        ('licence', (Optional[str], None)),
+    ])
+    retval = create_model(
+        'CreationInfo',
+        __config__=BaseConfig,
+        **_func_map)
+    return retval
+
+
+class CreationInfo(creationinfo_factory()):
+    pass
+
+
 class AggregationTagSchema(BaseModel):
     type: str
     name: str
@@ -69,6 +90,23 @@ class AggregatedLossSchema(BaseModel):
     _losscalculation_oid: int
     _type: str
     aggregationtags: list[AggregationTagSchema]
+
+    class Config:
+        getter_dict = ValueGetter
+
+
+class EarthquakeInformationSchema(BaseModel):
+    oid: int = Field(..., alias='_oid')
+    depth: Optional[RealFloatValue]
+    longitude: Optional[RealFloatValue]
+    latitude: Optional[RealFloatValue]
+    creationinfo: Optional[CreationInfo]
+    time: Optional[datetime]
+    eventid: str
+    magnitude: Optional[float]
+    evaluationmethod: Optional[str]
+    hazardlevel: Optional[int]
+    type: EEarthquakeType
 
     class Config:
         getter_dict = ValueGetter
