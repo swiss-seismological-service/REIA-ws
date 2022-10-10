@@ -1,4 +1,6 @@
 
+from datetime import datetime
+
 from esloss.datamodel import (AggregatedLoss, EarthquakeInformation,
                               LossCalculation)
 from sqlalchemy import select
@@ -12,11 +14,23 @@ def read_losses(db: Session, losscalculation_id: int) \
     return db.execute(stmt).unique().scalars().all()
 
 
-def read_earthquakes(db: Session) -> list[EarthquakeInformation]:
+def read_earthquakes(db: Session, starttime: datetime | None,
+                     endtime: datetime | None) -> list[EarthquakeInformation]:
     stmt = select(EarthquakeInformation)
+    if starttime:
+        stmt = stmt.filter(EarthquakeInformation.time >= starttime)
+    if endtime:
+        stmt = stmt.filter(EarthquakeInformation.time <= endtime)
     return db.execute(stmt).unique().scalars().all()
 
 
-def read_calculations(db: Session) -> list[LossCalculation]:
+def read_calculations(db: Session, starttime: datetime | None,
+                      endtime: datetime | None) -> list[LossCalculation]:
     stmt = select(LossCalculation)
+    if starttime:
+        stmt = stmt.filter(
+            LossCalculation.creationinfo_creationtime >= starttime)
+    if endtime:
+        stmt = stmt.filter(
+            LossCalculation.creationinfo_creationtime <= endtime)
     return db.execute(stmt).unique().scalars().all()
