@@ -1,10 +1,11 @@
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app import crud
 from app.dependencies import get_db
 from app.schemas import EarthquakeInformationSchema, LossCalculationSchema
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=['calculations', 'earthquakes'])
 

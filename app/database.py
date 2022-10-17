@@ -1,6 +1,7 @@
-from config.config import get_settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from config.config import get_settings
 
 
 def postgresql_url():

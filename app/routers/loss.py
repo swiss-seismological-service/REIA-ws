@@ -1,8 +1,9 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app import crud
 from app.dependencies import get_db
 from app.schemas import AggregatedLossSchema
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 router = APIRouter(prefix='/loss', tags=['loss'])
 
