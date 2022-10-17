@@ -34,3 +34,8 @@ def read_calculations(db: Session, starttime: datetime | None,
         stmt = stmt.filter(
             LossCalculation.creationinfo_creationtime <= endtime)
     return db.execute(stmt).unique().scalars().all()
+
+
+def read_calculation(db: Session, id: int) -> list[LossCalculation]:
+    stmt = select(LossCalculation).where(LossCalculation._oid == id)
+    return db.execute(stmt).unique().scalar()

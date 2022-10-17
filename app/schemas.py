@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
@@ -82,6 +83,17 @@ class AggregationTagSchema(BaseModel):
     type: str
     name: str
     _assetcollection_oid: int
+
+
+class ELossStatistics(enum.Enum):
+    MEAN = 'mean'
+
+
+class LossStatisticsSchema(BaseModel):
+    loss: RealFloatValue
+    losscategory: ELossCategory
+    aggregationtags: list[AggregationTagSchema]
+    statisticstype: ELossStatistics
 
 
 class AggregatedLossSchema(BaseModel):
