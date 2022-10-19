@@ -1,17 +1,39 @@
 
 from datetime import datetime
 
-from esloss.datamodel import (AggregatedLoss, EarthquakeInformation,
-                              LossCalculation)
+import pandas as pd
+from esloss.datamodel import (AggregatedLoss, AggregationTag,
+                              EarthquakeInformation, LossCalculation)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 
 def read_losses(db: Session, losscalculation_id: int) \
         -> list[AggregatedLoss]:
+
     stmt = select(AggregatedLoss).where(
         AggregatedLoss._losscalculation_oid == losscalculation_id)
+
     return db.execute(stmt).unique().scalars().all()
+
+
+def read_tag_losses(db: Session, losscalculation_id: int, tag: str) \
+        -> list[AggregatedLoss]:
+
+    stmt = select(AggregatedLoss).where(
+        AggregatedLoss._losscalculation_oid == losscalculation_id).where(
+        AggregatedLoss.aggregationtags.any(AggregationTag.name == tag)
+    )
+    return db.execute(stmt).unique().scalars().all()
+
+
+def read_tag_losses_df(db: Session, losscalculation_id: int, tag: str) \
+        -> pd.DataFrame:
+    stmt = select(AggregatedLoss).where(
+        AggregatedLoss._losscalculation_oid == losscalculation_id).where(
+        AggregatedLoss.aggregationtags.any(AggregationTag.name == tag)
+    )
+    return pd.read_sql(stmt, db.get_bind())
 
 
 def read_earthquakes(db: Session, starttime: datetime | None,

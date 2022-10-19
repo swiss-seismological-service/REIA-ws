@@ -1,12 +1,15 @@
+import time
 from typing import List
+
+from esloss.datamodel import EEarthquakeType, ELossCategory
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app import crud
 from app.dependencies import get_db
 from app.schemas import (AggregatedLossSchema, AggregationTagSchema,
                          ELossStatistics, LossStatisticsSchema)
-from esloss.datamodel import EEarthquakeType, ELossCategory
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 
 router = APIRouter(prefix='/loss', tags=['loss'])
 
@@ -34,20 +37,29 @@ async def get_loss_statistics(losscalculation_id: int,
     """
     Returns a list of statistical measures for the available aggregations.
     """
+    # now = time.perf_counter()
+    # df = crud.read_losses_df(db, losscalculation_id)
+    # print(time.perf_counter()-now)
+    # print(df.columns)
 
+    now = time.perf_counter()
     db_result = crud.read_losses(db, losscalculation_id)
     if not db_result:
         raise HTTPException(status_code=404, detail="No loss found.")
 
-    db_calculation = crud.read_calculation(db, losscalculation_id)
+    print(time.perf_counter()-now)
+    # print(len(db_result))
 
-    print(statistic)
-    print(db_calculation.aggregateby)
+    # db_calculation = crud.read_calculation(db, losscalculation_id)
+    # print(statistic)
+    # print(db_calculation.aggregateby)
+    now = time.perf_counter()
     print(set(res.aggregationtags[1].name for res in db_result))
-    print(aggregationtypes)
-    if not set(aggregationtypes).issubset(
-            set(a for a in db_calculation.aggregateby)):
-        print('fail')
+    print(time.perf_counter()-now)
+    # print(aggregationtypes)
+    # if not set(aggregationtypes).issubset(
+    #         set(a for a in db_calculation.aggregateby)):
+    #     print('fail')
 
     return [LossStatisticsSchema(loss={'value': 0},
                                  losscategory=ELossCategory.STRUCTURAL,
