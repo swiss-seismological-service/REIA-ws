@@ -3,9 +3,32 @@ from datetime import datetime
 
 import pandas as pd
 from esloss.datamodel import (AggregatedLoss, AggregationTag,
-                              EarthquakeInformation, LossCalculation)
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+                              EarthquakeInformation, LossCalculation,
+                              aggregatedloss_aggregationtag)
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy.sql import label
+
+
+def read_losses_test(db: Session, losscalculation_id: int) \
+        -> list[AggregatedLoss]:
+
+    stmt2 = select(AggregationTag).where(
+        AggregationTag.type == 'CantonGemeinde').subquery()
+    stmt = select(
+        func.avg(AggregatedLoss.loss_value),
+        func.sum(AggregatedLoss.loss_uncertainty) /
+        func.pow(func.count(AggregatedLoss.loss_value), 2),
+        func.count(AggregatedLoss.loss_value),
+        stmt2.c.name).select_from(
+        AggregatedLoss).join(
+        aggregatedloss_aggregationtag).join(
+        stmt2).where(
+        AggregatedLoss._losscalculation_oid == losscalculation_id).where(
+        AggregatedLoss.aggregationtags.any(AggregationTag.name == 'VS')
+    ).group_by(stmt2.c.name)
+
+    return db.execute(stmt).unique().scalars().all()
 
 
 def read_losses(db: Session, losscalculation_id: int) \
@@ -13,7 +36,7 @@ def read_losses(db: Session, losscalculation_id: int) \
 
     stmt = select(AggregatedLoss).where(
         AggregatedLoss._losscalculation_oid == losscalculation_id)
-
+    print(stmt)
     return db.execute(stmt).unique().scalars().all()
 
 
