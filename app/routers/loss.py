@@ -14,67 +14,59 @@ from app.schemas import (AggregatedLossSchema, AggregationTagSchema,
 router = APIRouter(prefix='/loss', tags=['loss'])
 
 
-@router.get("/{losscalculation_id}", response_model=list[AggregatedLossSchema],
+@router.get("/{losscalculation_id}/aggregated/{aggregation_type}",
+            # response_model=list[AggregatedLossSchema],
             response_model_exclude_none=True)
-async def get_losses(losscalculation_id: int, db: Session = Depends(get_db)):
+async def get_losses(losscalculation_id: int,
+                     aggregation_type: str,
+                     losscategory: ELossCategory | None = None,
+                     aggregationtag: str | None = None,
+                     db: Session = Depends(get_db)):
     """
     Returns a list of all realizations of loss for a calculation.
     """
-    db_result = crud.read_losses(db, losscalculation_id)
-    if not db_result:
+    now = time.perf_counter()
+    db_result = crud.read_tag_losses_df(db, losscalculation_id, 'd')
+
+    if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
-    return db_result
+
+    print(time.perf_counter()-now)
+    print(db_result)
+
+    now = time.perf_counter()
+    db_result = crud.read_aggregation_losses_df(db, losscalculation_id,
+                                                aggregation_type,
+                                                losscategory,
+                                                aggregationtag)
+    if db_result.empty:
+        raise HTTPException(status_code=404, detail="No loss found.")
+    print(time.perf_counter()-now)
+    print(db_result)
+    return None
 
 
-@router.get("/{losscalculation_id}/{statistic}",
+@router.get("/{losscalculation_id}/aggregated/{aggregation_type}/mean",
             response_model=list[LossStatisticsSchema],
             response_model_exclude_none=True)
-async def get_loss_statistics(losscalculation_id: int,
-                              statistic: str,
-                              aggregationtypes: List[str] = Query(
-                                  default=[]),
-                              db: Session = Depends(get_db)):
+async def get_mean_losses(losscalculation_id: int,
+                          aggregation_type: str,
+                          losscategory: ELossCategory | None = None,
+                          # aggregationtags: List[str] = Query(default=[]),
+                          aggregationtag: str | None = None,
+                          db: Session = Depends(get_db)):
     """
     Returns a list of statistical measures for the available aggregations.
     """
-
     now = time.perf_counter()
-    db_result = crud.read_losses_test(db, losscalculation_id)
+    db_result = crud.read_mean_losses_df(
+        db, losscalculation_id, aggregation_type, losscategory, aggregationtag)
+
+    if db_result.empty:
+        raise HTTPException(status_code=404, detail="No loss found.")
+
     print(time.perf_counter()-now)
-    print(len(db_result))
-
-    # now = time.perf_counter()
-    # df = crud.read_losses_df(db, losscalculation_id)
-    # print(time.perf_counter()-now)
-    # print(df.columns)
-
-    # now = time.perf_counter()
-    # db_result = crud.read_losses(db, losscalculation_id)
-    # if not db_result:
-    #     raise HTTPException(status_code=404, detail="No loss found.")
-    # print(time.perf_counter()-now)
-    # print(len(db_result))
-
-    # now = time.perf_counter()
-    # db_result = crud.read_tag_losses(db, losscalculation_id, 'VS')
-    # print(time.perf_counter()-now)
-    # print(len(db_result))
-
-    # now = time.perf_counter()
-    # db_result = crud.read_tag_losses_df(db, losscalculation_id, 'VS')
-    # print(time.perf_counter()-now)
-    # print(db_result)
-
-    # db_calculation = crud.read_calculation(db, losscalculation_id)
-    # print(statistic)
-    # print(db_calculation.aggregateby)
-    # now = time.perf_counter()
-    # print(set(res.aggregationtags[1].name for res in db_result))
-    # print(time.perf_counter()-now)
-    # print(aggregationtypes)
-    # if not set(aggregationtypes).issubset(
-    #         set(a for a in db_calculation.aggregateby)):
-    #     print('fail')
+    print(db_result)
 
     return [LossStatisticsSchema(loss={'value': 0},
                                  losscategory=ELossCategory.STRUCTURAL,
