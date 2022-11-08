@@ -19,7 +19,7 @@ def tagname_filter(f): return AggregatedLoss.aggregationtags.any(
 
 
 def calculationid_filter(f):
-    return AggregatedLoss._calculation_oid == f if f else True
+    return AggregatedLoss._riskcalculation_oid == f if f else True
 
 
 def statement_select_per_tag(agg_type: str,
@@ -29,7 +29,8 @@ def statement_select_per_tag(agg_type: str,
     stmt = select(AggregatedLoss.loss_value,
                   AggregatedLoss.loss_uncertainty,
                   AggregatedLoss.eventid,
-                  tag_sub.c.name.label(agg_type)) \
+                  tag_sub.c.name.label(agg_type),
+                  AggregatedLoss.weight) \
         .select_from(AggregatedLoss).join(aggregatedloss_aggregationtag) \
         .join(tag_sub) \
         .where(filter) \

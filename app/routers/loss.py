@@ -21,10 +21,6 @@ async def get_losses(calculation_id: int,
     """
     Returns a list of all realizations of loss for a calculation.
     """
-    db_result = crud.read_tag_losses_df(db, calculation_id, 'd')
-
-    if db_result.empty:
-        raise HTTPException(status_code=404, detail="No loss found.")
 
     db_result = crud.read_aggregation_losses_df(db, calculation_id,
                                                 aggregation_type,
@@ -50,7 +46,7 @@ async def get_mean_losses(calculation_id: int,
     """
     db_result = crud.read_mean_losses_df(
         db, calculation_id, aggregation_type, losscategory, aggregationtag)
-
+    print(db_result)
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
 
