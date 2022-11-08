@@ -10,10 +10,10 @@ from app.schemas import (AggregationTagSchema, ELossStatistics,
 router = APIRouter(prefix='/loss', tags=['loss'])
 
 
-@router.get("/{losscalculation_id}/aggregated/{aggregation_type}",
+@router.get("/{calculation_id}/aggregated/{aggregation_type}",
             # response_model=list[AggregatedLossSchema],
             response_model_exclude_none=True)
-async def get_losses(losscalculation_id: int,
+async def get_losses(calculation_id: int,
                      aggregation_type: str,
                      losscategory: ELossCategory | None = None,
                      aggregationtag: str | None = None,
@@ -21,12 +21,12 @@ async def get_losses(losscalculation_id: int,
     """
     Returns a list of all realizations of loss for a calculation.
     """
-    db_result = crud.read_tag_losses_df(db, losscalculation_id, 'd')
+    db_result = crud.read_tag_losses_df(db, calculation_id, 'd')
 
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
 
-    db_result = crud.read_aggregation_losses_df(db, losscalculation_id,
+    db_result = crud.read_aggregation_losses_df(db, calculation_id,
                                                 aggregation_type,
                                                 losscategory,
                                                 aggregationtag)
@@ -36,10 +36,10 @@ async def get_losses(losscalculation_id: int,
     return None
 
 
-@router.get("/{losscalculation_id}/aggregated/{aggregation_type}/mean",
+@router.get("/{calculation_id}/aggregated/{aggregation_type}/mean",
             response_model=list[LossStatisticsSchema],
             response_model_exclude_none=True)
-async def get_mean_losses(losscalculation_id: int,
+async def get_mean_losses(calculation_id: int,
                           aggregation_type: str,
                           losscategory: ELossCategory | None = None,
                           # aggregationtags: List[str] = Query(default=[]),
@@ -49,7 +49,7 @@ async def get_mean_losses(losscalculation_id: int,
     Returns a list of statistical measures for the available aggregations.
     """
     db_result = crud.read_mean_losses_df(
-        db, losscalculation_id, aggregation_type, losscategory, aggregationtag)
+        db, calculation_id, aggregation_type, losscategory, aggregationtag)
 
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")

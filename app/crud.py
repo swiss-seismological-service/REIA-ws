@@ -2,11 +2,11 @@
 from datetime import datetime
 
 import pandas as pd
-from esloss.datamodel import (AggregatedLoss, AggregationTag,
+from esloss.datamodel import (AggregatedLoss, AggregationTag, Calculation,
                               EarthquakeInformation, ELossCategory,
-                              LossCalculation, aggregatedloss_aggregationtag)
+                              RiskCalculation, aggregatedloss_aggregationtag)
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, with_polymorphic
 from sqlalchemy.sql import Select
 
 
@@ -19,7 +19,7 @@ def tagname_filter(f): return AggregatedLoss.aggregationtags.any(
 
 
 def calculationid_filter(f):
-    return AggregatedLoss._losscalculation_oid == f if f else True
+    return AggregatedLoss._calculation_oid == f if f else True
 
 
 def statement_select_per_tag(agg_type: str,
@@ -39,13 +39,13 @@ def statement_select_per_tag(agg_type: str,
 
 
 def read_aggregation_losses_df(db: Session,
-                               losscalculation_id: int,
+                               calculation_id: int,
                                agg_type: str,
                                loss_category: ELossCategory | None = None,
                                filter_tag: str | None = None) \
         -> pd.DataFrame:
 
-    filter = calculationid_filter(losscalculation_id)
+    filter = calculationid_filter(calculation_id)
     filter &= losscategory_filter(loss_category)
     filter &= tagname_filter(filter_tag)
 
@@ -54,13 +54,13 @@ def read_aggregation_losses_df(db: Session,
 
 
 def read_mean_losses_df(db: Session,
-                        losscalculation_id: int,
+                        calculation_id: int,
                         aggregation_type: str,
                         loss_category: ELossCategory | None = None,
                         filter_tag: str | None = None) \
         -> pd.DataFrame:
 
-    filter = calculationid_filter(losscalculation_id)
+    filter = calculationid_filter(calculation_id)
     filter &= losscategory_filter(loss_category)
     filter &= tagname_filter(filter_tag)
 
@@ -84,17 +84,19 @@ def read_earthquakes(db: Session, starttime: datetime | None,
 
 
 def read_calculations(db: Session, starttime: datetime | None,
-                      endtime: datetime | None) -> list[LossCalculation]:
-    stmt = select(LossCalculation)
+                      endtime: datetime | None) -> list[Calculation]:
+    all_calculations = with_polymorphic(Calculation, [RiskCalculation])
+    stmt = select(all_calculations)
     if starttime:
         stmt = stmt.filter(
-            LossCalculation.creationinfo_creationtime >= starttime)
+            Calculation.creationinfo_creationtime >= starttime)
     if endtime:
         stmt = stmt.filter(
-            LossCalculation.creationinfo_creationtime <= endtime)
+            Calculation.creationinfo_creationtime <= endtime)
     return db.execute(stmt).unique().scalars().all()
 
 
-def read_calculation(db: Session, id: int) -> list[LossCalculation]:
-    stmt = select(LossCalculation).where(LossCalculation._oid == id)
+def read_calculation(db: Session, id: int) -> list[Calculation]:
+    all_calculations = with_polymorphic(Calculation, [RiskCalculation])
+    stmt = select(all_calculations).where(Calculation._oid == id)
     return db.execute(stmt).unique().scalar()

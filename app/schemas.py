@@ -99,8 +99,9 @@ class LossStatisticsSchema(BaseModel):
 class AggregatedLossSchema(BaseModel):
     loss: RealFloatValue
     eventid: int
+    weight: float
     losscategory: ELossCategory
-    _losscalculation_oid: int
+    _calculation_oid: int
     _type: str
     aggregationtags: list[AggregationTagSchema]
 
@@ -108,10 +109,24 @@ class AggregatedLossSchema(BaseModel):
         getter_dict = ValueGetter
 
 
-class LossCalculationSchema(BaseModel):
+class CalculationBranchSchema(BaseModel):
+    weight: float
+    config: dict
+    status: EStatus
+    type: str = Field(..., alias='_type')
+
+
+class RiskCalculationBranchSchema(CalculationBranchSchema):
+    _calculation_oid: int
+
+
+class DamageCalculationBranchSchema(CalculationBranchSchema):
+    _calculation_oid: int
+
+
+class CalculationSchema(BaseModel):
     oid: int = Field(..., alias='_oid')
     aggregateby: list[str]
-    config: dict
     creationinfo: CreationInfo
     status: EStatus
     description: Optional[str]
@@ -121,8 +136,12 @@ class LossCalculationSchema(BaseModel):
         getter_dict = ValueGetter
 
 
-class RiskCalculationSchema(LossCalculationSchema):
-    pass
+class RiskCalculationSchema(CalculationSchema):
+    riskcalculationbranches: list[RiskCalculationBranchSchema]
+
+
+class DamageCalculationSchema(CalculationSchema):
+    damagecalculationbranches: list[DamageCalculationBranchSchema]
 
 
 class EarthquakeInformationSchema(BaseModel):
@@ -137,7 +156,7 @@ class EarthquakeInformationSchema(BaseModel):
     evaluationmethod: Optional[str]
     hazardlevel: Optional[int]
     type: EEarthquakeType
-    losscalculation: list[LossCalculationSchema]
+    calculation: list[CalculationSchema]
 
     class Config:
         getter_dict = ValueGetter
