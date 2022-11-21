@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.dependencies import get_db
-from app.schemas import (AggregationTagSchema, ELossStatistics,
-                         LossStatisticsSchema)
+
+# from app.schemas import AggregationTagSchema
 
 router = APIRouter(prefix='/loss', tags=['loss'])
 
@@ -28,12 +28,12 @@ async def get_losses(calculation_id: int,
                                                 aggregationtag)
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
-
+    print(db_result)
     return None
 
 
 @router.get("/{calculation_id}/aggregated/{aggregation_type}/mean",
-            response_model=list[LossStatisticsSchema],
+            # response_model=list[LossStatisticsSchema],
             response_model_exclude_none=True)
 async def get_mean_losses(calculation_id: int,
                           aggregation_type: str,
@@ -49,9 +49,9 @@ async def get_mean_losses(calculation_id: int,
     print(db_result)
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
-
-    return [LossStatisticsSchema(loss={'value': 0},
-                                 losscategory=ELossCategory.STRUCTURAL,
-                                 aggregationtags=[AggregationTagSchema(
-                                     type='Canton', name='Valais')],
-                                 statisticstype=ELossStatistics.MEAN)]
+    return None
+    # return [LossStatisticsSchema(loss={'value': 0},
+    #                              losscategory=ELossCategory.STRUCTURAL,
+    #                              aggregationtags=[AggregationTagSchema(
+    #                                  type='Canton', name='Valais')],
+    #                              statisticstype=ELossStatistics.MEAN)]

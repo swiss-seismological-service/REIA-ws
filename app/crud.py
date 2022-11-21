@@ -2,39 +2,38 @@
 from datetime import datetime
 
 import pandas as pd
-from esloss.datamodel import (AggregatedLoss, AggregationTag, Calculation,
-                              EarthquakeInformation, ELossCategory,
-                              RiskCalculation, aggregatedloss_aggregationtag)
+from esloss.datamodel import (AggregationTag, Calculation,
+                              EarthquakeInformation, ELossCategory, LossValue,
+                              RiskCalculation, riskvalue_aggregationtag)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, with_polymorphic
 from sqlalchemy.sql import Select
 
 
 def losscategory_filter(
-    f): return AggregatedLoss.losscategory == f if f else True
+    f): return LossValue.losscategory == f if f else True
 
 
-def tagname_filter(f): return AggregatedLoss.aggregationtags.any(
+def tagname_filter(f): return LossValue.aggregationtags.any(
     AggregationTag.name == f) if f else True
 
 
 def calculationid_filter(f):
-    return AggregatedLoss._riskcalculation_oid == f if f else True
+    return LossValue._calculation_oid == f if f else True
 
 
 def statement_select_per_tag(agg_type: str,
                              filter: bool = True) -> Select:
     tag_sub = select(AggregationTag).where(
         AggregationTag.type == agg_type).subquery()
-    stmt = select(AggregatedLoss.loss_value,
-                  AggregatedLoss.loss_uncertainty,
-                  AggregatedLoss.eventid,
+    stmt = select(LossValue.loss_value,
+                  LossValue.eventid,
                   tag_sub.c.name.label(agg_type),
-                  AggregatedLoss.weight) \
-        .select_from(AggregatedLoss).join(aggregatedloss_aggregationtag) \
+                  LossValue.weight) \
+        .select_from(LossValue).join(riskvalue_aggregationtag) \
         .join(tag_sub) \
         .where(filter) \
-        .order_by(tag_sub.c.name, AggregatedLoss.eventid)
+        .order_by(tag_sub.c.name, LossValue.eventid)
 
     return stmt
 
@@ -67,10 +66,10 @@ def read_mean_losses_df(db: Session,
 
     per_tag = statement_select_per_tag(aggregation_type, filter)
     stmt = select(
-        (func.sum(per_tag.c.loss_value)/1250).label('mean'),
-        (func.sum(per_tag.c.loss_uncertainty)/(1250 ^ 2)).label('variance'),
+        (func.sum(per_tag.c.loss_value*per_tag.c.weight)).label('mean'),
         getattr(per_tag.c, aggregation_type)) \
         .group_by(getattr(per_tag.c, aggregation_type))
+    print(stmt)
     return pd.read_sql(stmt, db.get_bind())
 
 

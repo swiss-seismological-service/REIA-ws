@@ -1,4 +1,4 @@
-import enum
+# import enum
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
@@ -82,31 +82,17 @@ class CreationInfo(creationinfo_factory()):
 class AggregationTagSchema(BaseModel):
     type: str
     name: str
-    _assetcollection_oid: int
 
 
-class ELossStatistics(enum.Enum):
-    MEAN = 'mean'
+# class ELossStatistics(enum.Enum):
+#     MEAN = 'mean'
 
 
-class LossStatisticsSchema(BaseModel):
-    loss: RealFloatValue
-    losscategory: ELossCategory
-    aggregationtags: list[AggregationTagSchema]
-    statisticstype: ELossStatistics
-
-
-class AggregatedLossSchema(BaseModel):
-    loss: RealFloatValue
-    eventid: int
-    weight: float
-    losscategory: ELossCategory
-    _calculation_oid: int
-    _type: str
-    aggregationtags: list[AggregationTagSchema]
-
-    class Config:
-        getter_dict = ValueGetter
+# class LossStatisticsSchema(BaseModel):
+#     loss: RealFloatValue
+#     losscategory: ELossCategory
+#     aggregationtags: list[AggregationTagSchema]
+#     statisticstype: ELossStatistics
 
 
 class CalculationBranchSchema(BaseModel):
@@ -146,17 +132,37 @@ class DamageCalculationSchema(CalculationSchema):
 
 class EarthquakeInformationSchema(BaseModel):
     oid: int = Field(..., alias='_oid')
-    depth: Optional[RealFloatValue]
-    longitude: Optional[RealFloatValue]
-    latitude: Optional[RealFloatValue]
-    creationinfo: CreationInfo
-    time: Optional[datetime]
-    eventid: str
-    magnitude: Optional[float]
-    evaluationmethod: Optional[str]
-    hazardlevel: Optional[int]
+    originid: str
     type: EEarthquakeType
     calculation: list[CalculationSchema]
+
+
+class RiskValueSchema(BaseModel):
+    eventid: int
+    losscategory: ELossCategory
+    weight: float
+
+    aggregationtags: list[AggregationTagSchema]
+
+    _calculation_oid: int
+    _type: str
+
+
+class LossValueSchema(RiskValueSchema):
+    loss: Optional[RealFloatValue]
+    _riskcalculationbranch_oid = Optional[int]
+
+    class Config:
+        getter_dict = ValueGetter
+
+
+class DamageValueSchema(RiskValueSchema):
+    dg1: Optional[RealFloatValue]
+    dg2: Optional[RealFloatValue]
+    dg3: Optional[RealFloatValue]
+    dg4: Optional[RealFloatValue]
+    dg5: Optional[RealFloatValue]
+    _damageculationbranch_oid = Optional[int]
 
     class Config:
         getter_dict = ValueGetter
