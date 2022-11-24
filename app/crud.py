@@ -18,6 +18,10 @@ def tagname_filter(f): return LossValue.aggregationtags.any(
     AggregationTag.name == f) if f else True
 
 
+def tagname_like_filter(f): return LossValue.aggregationtags.any(
+    AggregationTag.name.like(f)) if f else True
+
+
 def calculationid_filter(f):
     return LossValue._calculation_oid == f if f else True
 
@@ -26,14 +30,14 @@ def statement_select_per_tag(agg_type: str,
                              filter: bool = True) -> Select:
     tag_sub = select(AggregationTag).where(
         AggregationTag.type == agg_type).subquery()
-    stmt = select(LossValue.loss_value,
-                  LossValue.eventid,
+    stmt = select(LossValue._oid,
+                  LossValue.loss_value,
                   tag_sub.c.name.label(agg_type),
                   LossValue.weight) \
-        .select_from(LossValue).join(riskvalue_aggregationtag) \
-        .join(tag_sub) \
+        .select_from(LossValue)\
         .where(filter) \
-        .order_by(tag_sub.c.name, LossValue.eventid)
+        .join(riskvalue_aggregationtag) \
+        .join(tag_sub)
 
     return stmt
 
