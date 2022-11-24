@@ -3,8 +3,9 @@ from datetime import datetime
 
 import pandas as pd
 from esloss.datamodel import (AggregationTag, Calculation,
-                              EarthquakeInformation, ELossCategory, LossValue,
-                              RiskCalculation, riskvalue_aggregationtag)
+                              EarthquakeInformation, ELossCategory,
+                              LossCalculation, LossValue,
+                              riskvalue_aggregationtag)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, with_polymorphic
 from sqlalchemy.sql import Select
@@ -89,7 +90,7 @@ def read_earthquakes(db: Session, starttime: datetime | None,
 
 def read_calculations(db: Session, starttime: datetime | None,
                       endtime: datetime | None) -> list[Calculation]:
-    all_calculations = with_polymorphic(Calculation, [RiskCalculation])
+    all_calculations = with_polymorphic(Calculation, [LossCalculation])
     stmt = select(all_calculations)
     if starttime:
         stmt = stmt.filter(
@@ -101,6 +102,6 @@ def read_calculations(db: Session, starttime: datetime | None,
 
 
 def read_calculation(db: Session, id: int) -> list[Calculation]:
-    all_calculations = with_polymorphic(Calculation, [RiskCalculation])
+    all_calculations = with_polymorphic(Calculation, [LossCalculation])
     stmt = select(all_calculations).where(Calculation._oid == id)
     return db.execute(stmt).unique().scalar()

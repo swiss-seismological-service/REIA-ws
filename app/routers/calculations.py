@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.dependencies import get_db
 from app.schemas import (DamageCalculationSchema, EarthquakeInformationSchema,
-                         RiskCalculationSchema)
+                         LossCalculationSchema)
 
 router = APIRouter(tags=['calculations', 'earthquakes'])
 
@@ -26,7 +26,7 @@ async def read_earthquakes(starttime: datetime | None = None,
 
 
 @router.get("/calculations",
-            response_model=list[RiskCalculationSchema |
+            response_model=list[LossCalculationSchema |
                                 DamageCalculationSchema],
             response_model_exclude_none=True)
 async def read_calculations(starttime: datetime | None = None,
@@ -42,7 +42,7 @@ async def read_calculations(starttime: datetime | None = None,
 
 
 @router.get("/calculation/{id}",
-            response_model=RiskCalculationSchema | DamageCalculationSchema,
+            response_model=LossCalculationSchema | DamageCalculationSchema,
             response_model_exclude_none=True)
 async def read_calculation(id: int,
                            db: Session = Depends(get_db)):

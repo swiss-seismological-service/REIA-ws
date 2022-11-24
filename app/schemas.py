@@ -84,17 +84,6 @@ class AggregationTagSchema(BaseModel):
     name: str
 
 
-# class ELossStatistics(enum.Enum):
-#     MEAN = 'mean'
-
-
-# class LossStatisticsSchema(BaseModel):
-#     loss: RealFloatValue
-#     losscategory: ELossCategory
-#     aggregationtags: list[AggregationTagSchema]
-#     statisticstype: ELossStatistics
-
-
 class CalculationBranchSchema(BaseModel):
     weight: float
     config: dict
@@ -102,7 +91,7 @@ class CalculationBranchSchema(BaseModel):
     type: str = Field(..., alias='_type')
 
 
-class RiskCalculationBranchSchema(CalculationBranchSchema):
+class LossCalculationBranchSchema(CalculationBranchSchema):
     _calculation_oid: int
 
 
@@ -122,8 +111,8 @@ class CalculationSchema(BaseModel):
         getter_dict = ValueGetter
 
 
-class RiskCalculationSchema(CalculationSchema):
-    riskcalculationbranches: list[RiskCalculationBranchSchema]
+class LossCalculationSchema(CalculationSchema):
+    losscalculationbranches: list[LossCalculationBranchSchema]
 
 
 class DamageCalculationSchema(CalculationSchema):
@@ -150,7 +139,7 @@ class RiskValueSchema(BaseModel):
 
 class LossValueSchema(RiskValueSchema):
     loss: Optional[RealFloatValue]
-    _riskcalculationbranch_oid = Optional[int]
+    _losscalculationbranch_oid = Optional[int]
 
     class Config:
         getter_dict = ValueGetter
