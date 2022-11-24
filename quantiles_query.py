@@ -18,6 +18,9 @@ def queries():
     aggregationtag = None  # 'AG'
     aggregationtag_like = 'AG%'
 
+    # buildings
+    # b = crud.read_total_buildings(db, 1, 'CantonGemeinde', 'AG')
+
     # now = time.perf_counter()
     # db_result = crud.read_aggregation_losses_df(db, calculation_id,
     #                                             aggregation_type,
