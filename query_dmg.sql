@@ -19,7 +19,8 @@ FROM
 	ON tags_of_type._oid = loss_assoc_riskvalue_aggregationtag.aggregationtag 
 WHERE 
 	loss_riskvalue.losscategory = 'STRUCTURAL'
-	AND loss_riskvalue._calculation_oid = 2
+	AND loss_riskvalue._calculation_oid = 6
 	AND tags_of_type.name LIKE 'AG%'
 	AND loss_riskvalue._type = 'damagevalue'
 GROUP BY tags_of_type.name
+ORDER BY tags_of_type.name

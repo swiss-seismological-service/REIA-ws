@@ -155,3 +155,15 @@ class DamageValueSchema(RiskValueSchema):
 
     class Config:
         getter_dict = ValueGetter
+
+
+class RiskValueStatisticsSchema(BaseModel):
+    mean: float
+    quantile10: float
+    quantile90: float
+    losscategory: ELossCategory
+    tag: str
+
+
+class DamageValueStatisticsSchema(RiskValueStatisticsSchema):
+    percentage: float

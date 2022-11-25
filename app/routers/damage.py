@@ -7,39 +7,13 @@ from app.dependencies import get_db
 from app.schemas import RiskValueStatisticsSchema
 from app.wquantile import weighted_quantile
 
-router = APIRouter(prefix='/loss', tags=['loss'])
-
-
-@router.get("/{calculation_id}/{loss_category}/Country",
-            response_model=RiskValueStatisticsSchema,
-            response_model_exclude_none=True)
-async def get_country_losses(calculation_id: int,
-                             loss_category: ELossCategory,
-                             db: Session = Depends(get_db)):
-    """
-    Returns a list of all realizations of loss for a calculation.
-    """
-
-    db_result = crud.read_country_statistics(db, calculation_id, loss_category)
-
-    mean = (db_result['loss_value']*db_result['weight']).sum()
-    q10, q90 = weighted_quantile(
-        db_result['loss_value'], (0.1, 0.9), db_result['weight'])
-
-    result = RiskValueStatisticsSchema(
-        mean=mean,
-        quantile10=q10,
-        quantile90=q90,
-        losscategory=loss_category,
-        tag='CH')
-
-    return result
+router = APIRouter(prefix='/damage', tags=['damage'])
 
 
 @router.get("/{calculation_id}/{loss_category}/{aggregation_type}",
             response_model=list[RiskValueStatisticsSchema],
             response_model_exclude_none=True)
-async def get_losses(calculation_id: int,
+async def get_damage(calculation_id: int,
                      aggregation_type: str,
                      loss_category: ELossCategory,
                      aggregation_tag: str | None = None,
@@ -47,6 +21,7 @@ async def get_losses(calculation_id: int,
     """
     Returns a list of all realizations of loss for a calculation.
     """
+    return None
     like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
 
     db_result = \

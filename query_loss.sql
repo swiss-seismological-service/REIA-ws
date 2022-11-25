@@ -1,5 +1,5 @@
 SELECT 
-	sum(loss_riskvalue.loss_value * loss_riskvalue.weight) AS sum_1, 
+	sum(loss_riskvalue.loss_value * loss_riskvalue.weight) AS sum_injured, 
 	tags_of_type.name 
 FROM 
 	loss_riskvalue 
@@ -15,7 +15,7 @@ FROM
 	ON tags_of_type._oid = loss_assoc_riskvalue_aggregationtag.aggregationtag 
 WHERE 
 	loss_riskvalue.losscategory = 'NONSTRUCTURAL'
-	AND loss_riskvalue._calculation_oid = 1
+	AND loss_riskvalue._calculation_oid = 5
 	AND tags_of_type.name LIKE 'AG%'
 	AND loss_riskvalue._type = 'lossvalue'
 GROUP BY tags_of_type.name

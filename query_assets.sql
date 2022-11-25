@@ -1,6 +1,6 @@
 SELECT 
-	sum(loss_asset.buildingcount) AS sum_1,
-	tag_of_type.name 
+	sum(loss_asset.buildingcount) AS total_buildings,
+	tags_of_type.name 
 FROM 
 	loss_asset 
 	JOIN loss_assoc_asset_aggregationtag ON loss_asset._oid = loss_assoc_asset_aggregationtag.asset 
@@ -13,8 +13,8 @@ FROM
 			loss_aggregationtag 
 		WHERE 
 			loss_aggregationtag.type = 'CantonGemeinde'
-	) AS tag_of_type
-	ON tag_of_type._oid = loss_assoc_asset_aggregationtag.aggregationtag 
+	) AS tags_of_type
+	ON tags_of_type._oid = loss_assoc_asset_aggregationtag.aggregationtag 
 	JOIN (
 		SELECT loss_exposuremodel._oid AS _oid
 		FROM loss_exposuremodel 
@@ -26,9 +26,10 @@ FROM
 		ON loss_exposuremodel._oid = loss_calculationbranch._exposuremodel_oid 
 		JOIN loss_calculation 
 		ON loss_calculation._oid = loss_damagecalculationbranch._calculation_oid 
-		WHERE loss_calculation._oid = 2
+		WHERE loss_calculation._oid = 6
 		LIMIT 1
 	) AS exposuremodel 
 	ON exposuremodel._oid = loss_asset._exposuremodel_oid 
-WHERE tag_of_type.name LIKE 'AG%'
-GROUP BY tag_of_type.name
+WHERE tags_of_type.name LIKE 'AG%'
+GROUP BY tags_of_type.name
+ORDER BY tags_of_type.name
