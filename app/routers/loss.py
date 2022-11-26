@@ -20,7 +20,7 @@ async def get_country_losses(calculation_id: int,
     Returns a list of all realizations of loss for a calculation.
     """
 
-    db_result = crud.read_country_statistics(db, calculation_id, loss_category)
+    db_result = crud.read_country_loss(db, calculation_id, loss_category)
 
     mean = (db_result['loss_value']*db_result['weight']).sum()
     q10, q90 = weighted_quantile(
@@ -50,11 +50,11 @@ async def get_losses(calculation_id: int,
     like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
 
     db_result = \
-        crud.read_aggregation_losses_df(db,
-                                        calculation_id,
-                                        aggregation_type,
-                                        loss_category,
-                                        filter_like_tag=like_tag)
+        crud.read_aggregated_loss(db,
+                                  calculation_id,
+                                  aggregation_type,
+                                  loss_category,
+                                  filter_like_tag=like_tag)
 
     if db_result.empty:
         raise HTTPException(status_code=404, detail="No loss found.")
