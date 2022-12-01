@@ -1,7 +1,7 @@
 import time
 
 import pandas as pd
-from esloss.datamodel import ELossCategory, LossValue
+from reia.datamodel import ELossCategory, LossValue
 from sqlalchemy import Float, cast, func, select
 from sqlalchemy.orm import scoped_session
 

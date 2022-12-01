@@ -1,4 +1,4 @@
-from esloss.datamodel import ELossCategory
+from reia.datamodel import ELossCategory
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

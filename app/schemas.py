@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
-from esloss.datamodel import EEarthquakeType, ELossCategory, EStatus
+from reia.datamodel import EEarthquakeType, ELossCategory, EStatus
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
 from sqlalchemy.inspection import inspect

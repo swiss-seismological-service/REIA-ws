@@ -1,4 +1,4 @@
-from esloss.datamodel.base import ORMBase
+from reia.datamodel.base import ORMBase
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
