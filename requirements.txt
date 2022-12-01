@@ -22,7 +22,7 @@ pytest>=7.1.3
 pytest-cov>=4.0.0
 pytest-dotenv>=0.5.2
 python-dotenv>=0.21.0
-# reia.datamodel @ git+ssh://git@github.com/swiss-seismological-service/reia.datamodel.git
+reia.datamodel @ git+ssh://git@github.com/swiss-seismological-service/reia.datamodel.git
 sniffio>=1.3.0
 SQLAlchemy>=1.4.41
 starlette>=0.20.4
