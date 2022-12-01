@@ -124,6 +124,13 @@ class EarthquakeInformationSchema(BaseModel):
     originid: str
     type: EEarthquakeType
     calculation: list[CalculationSchema]
+    event_text: str
+    description_de: str | None = None
+    description_fr: str | None = None
+    description_it: str | None = None
+    description_en: str | None = None
+    latitude_value: float
+    longitude_value: float
 
 
 class RiskValueSchema(BaseModel):

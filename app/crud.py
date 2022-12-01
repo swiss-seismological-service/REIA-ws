@@ -2,11 +2,13 @@
 from datetime import datetime
 
 import pandas as pd
+import psycopg2
 from esloss.datamodel import (AggregationTag, Asset, Calculation,
                               DamageCalculationBranch, DamageValue,
                               EarthquakeInformation, ELossCategory,
                               ExposureModel, LossCalculation, LossValue,
                               asset_aggregationtag, riskvalue_aggregationtag)
+from psycopg2.extras import RealDictCursor
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
@@ -123,8 +125,7 @@ def read_aggregated_damage(db: Session,
 
     type_sub = aggregation_type_subquery(aggregation_type)
 
-    damagevalues = DamageValue.dg1_value + \
-        DamageValue.dg2_value + \
+    damagevalues = DamageValue.dg2_value + \
         DamageValue.dg3_value + \
         DamageValue.dg4_value + \
         DamageValue.dg5_value \
@@ -191,3 +192,26 @@ def read_mean_losses(db: Session,
         .group_by(type_sub.c.name)
 
     return pd.read_sql(stmt, db.get_bind())
+
+
+def read_earthquake_information(originids: tuple[str]) -> list[dict]:
+    from config.config import get_settings
+    settings = get_settings()
+    conn = psycopg2.connect(settings.SHAKEMAP_STRING)
+
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT"
+                   " origin_publicid,"
+                   " event_text,"
+                   " description_de,"
+                   " description_en,"
+                   " description_fr,"
+                   " description_it,"
+                   " latitude_value, longitude_value"
+                   " FROM public.sm_origin"
+                   f" WHERE origin_publicid IN {originids};")
+
+    db_earthquake = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [{k: v for k, v in d.items()} for d in db_earthquake]

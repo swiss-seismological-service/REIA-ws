@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import psycopg2
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -25,21 +24,24 @@ async def read_earthquakes(starttime: datetime | None = None,
     if not db_result:
         raise HTTPException(status_code=404, detail='No earthquakes found.')
 
-    # conn = psycopg2.connect(
-    #     'dbname=test user=postgres host=localhost password=password port=5432')
-    # cursor = conn.cursor()
-    # cursor.execute("CREATE TABLE test (id serial PRIMARY KEY, "
-    #                "num integer, data varchar);")
-    # cursor.execute(
-    #     "INSERT INTO test (num, data) VALUES (%s, %s)", (100, "abc'def"))
-    # conn.commit()
-    # cursor.execute("SELECT * FROM test;")
-    # db_earthquake = cursor.fetchone()
-    # cursor.close()
-    # conn.close()
-    # print(db_earthquake)
+    result = []
 
-    return db_result
+    shakemap_db_infos = crud.read_earthquake_information(
+        tuple(e.originid for e in db_result))
+
+    for earthquake_info in db_result:
+        info = next(i for i in shakemap_db_infos if
+                    i['origin_publicid'] == earthquake_info.originid)
+
+        for k, v in info.items():
+            setattr(earthquake_info, k, v)
+
+        earthquake_schema = \
+            EarthquakeInformationSchema.from_orm(earthquake_info)
+
+        result.append(earthquake_schema)
+
+    return result
 
 
 @router.get('/calculations',
