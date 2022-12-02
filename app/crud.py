@@ -216,6 +216,7 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
                    " description_it,"
                    " magnitude_value,"
                    " time_value,"
+                   " depth_value,"
                    " latitude_value, longitude_value"
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid IN {originids};")
@@ -241,6 +242,7 @@ def read_earthquake_information(originid: str) -> dict:
                    " description_it,"
                    " magnitude_value,"
                    " time_value,"
+                   " depth_value,"
                    " latitude_value, longitude_value"
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid = '{originid}';")

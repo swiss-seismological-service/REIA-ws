@@ -129,6 +129,7 @@ class EarthquakeInformationSchema(BaseModel):
     description_fr: str | None = None
     description_it: str | None = None
     description_en: str | None = None
+    depth_value: float
     time_value: datetime | None
     magnitude_value: str
     latitude_value: float
