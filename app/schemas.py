@@ -2,9 +2,9 @@
 from datetime import datetime
 from typing import Any, List, Optional, Type
 
-from reia.datamodel import EEarthquakeType, ELossCategory, EStatus
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
+from reia.datamodel import EEarthquakeType, ELossCategory, EStatus
 from sqlalchemy.inspection import inspect
 
 BaseConfig.arbitrary_types_allowed = True
@@ -129,6 +129,7 @@ class EarthquakeInformationSchema(BaseModel):
     description_fr: str | None = None
     description_it: str | None = None
     description_en: str | None = None
+    magnitude_value: str
     latitude_value: float
     longitude_value: float
 

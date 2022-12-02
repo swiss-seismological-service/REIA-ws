@@ -3,12 +3,12 @@ from datetime import datetime
 
 import pandas as pd
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from reia.datamodel import (AggregationTag, Asset, Calculation,
                             DamageCalculationBranch, DamageValue,
                             EarthquakeInformation, ELossCategory,
                             ExposureModel, LossCalculation, LossValue,
                             asset_aggregationtag, riskvalue_aggregationtag)
-from psycopg2.extras import RealDictCursor
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
@@ -207,6 +207,7 @@ def read_earthquake_information(originids: tuple[str]) -> list[dict]:
                    " description_en,"
                    " description_fr,"
                    " description_it,"
+                   " magnitude_value,"
                    " latitude_value, longitude_value"
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid IN {originids};")
