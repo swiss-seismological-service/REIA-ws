@@ -150,6 +150,12 @@ def read_earthquakes(db: Session, starttime: datetime | None,
     return db.execute(stmt).unique().scalars().all()
 
 
+def read_earthquake(db: Session, originid: str) -> list[EarthquakeInformation]:
+    stmt = select(EarthquakeInformation).where(
+        EarthquakeInformation.originid == originid)
+    return db.execute(stmt).unique().scalar()
+
+
 def read_calculations(db: Session, starttime: datetime | None,
                       endtime: datetime | None) -> list[Calculation]:
     all_calculations = with_polymorphic(Calculation, [LossCalculation])
@@ -194,7 +200,8 @@ def read_mean_losses(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
-def read_earthquake_information(originids: tuple[str]) -> list[dict]:
+def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
+
     from config.config import get_settings
     settings = get_settings()
     conn = psycopg2.connect(settings.SHAKEMAP_STRING)
@@ -212,7 +219,31 @@ def read_earthquake_information(originids: tuple[str]) -> list[dict]:
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid IN {originids};")
 
-    db_earthquake = cursor.fetchall()
+    db_earthquakes = cursor.fetchall()
     cursor.close()
     conn.close()
-    return [{k: v for k, v in d.items()} for d in db_earthquake]
+    return [{k: v for k, v in d.items()} for d in db_earthquakes]
+
+
+def read_earthquake_information(originid: str) -> dict:
+    from config.config import get_settings
+    settings = get_settings()
+    conn = psycopg2.connect(settings.SHAKEMAP_STRING)
+
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT"
+                   " origin_publicid,"
+                   " event_text,"
+                   " description_de,"
+                   " description_en,"
+                   " description_fr,"
+                   " description_it,"
+                   " magnitude_value,"
+                   " latitude_value, longitude_value"
+                   " FROM public.sm_origin"
+                   f" WHERE origin_publicid = '{originid}';")
+
+    db_earthquake = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return {k: v for k, v in db_earthquake.items()}

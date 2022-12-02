@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -26,7 +27,7 @@ async def read_earthquakes(starttime: datetime | None = None,
 
     result = []
 
-    shakemap_db_infos = crud.read_earthquake_information(
+    shakemap_db_infos = crud.read_earthquakes_information(
         tuple(e.originid for e in db_result))
 
     for earthquake_info in db_result:
@@ -42,6 +43,30 @@ async def read_earthquakes(starttime: datetime | None = None,
         result.append(earthquake_schema)
 
     return result
+
+
+@router.get('/earthquake/{originid}',
+            response_model=EarthquakeInformationSchema,
+            response_model_exclude_none=True)
+async def read_earthquake(originid: str, db: Session = Depends(get_db)):
+    '''
+    Returns the requested earthquake
+    '''
+    originid = base64.b64decode(originid).decode('utf-8')
+
+    db_result = crud.read_earthquake(db, originid)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail='No earthquakes found.')
+
+    shakemap_db_infos = crud.read_earthquake_information(originid)
+
+    for k, v in shakemap_db_infos.items():
+        setattr(db_result, k, v)
+
+    db_result = EarthquakeInformationSchema.from_orm(db_result)
+
+    return db_result
 
 
 @router.get('/calculations',
