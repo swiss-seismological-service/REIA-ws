@@ -15,7 +15,7 @@
                  + loss_riskvalue.dg5_value
                ) * loss_riskvalue.weight
              ) AS damage_buildings,
-                 sum(loss_riskvalue.dg1_value * loss_riskvalue.weight) AS dg1_src,
+               sum(loss_riskvalue.dg1_value * loss_riskvalue.weight) AS dg1_src,
              sum(loss_riskvalue.dg2_value * loss_riskvalue.weight) AS dg2_src,
              sum(loss_riskvalue.dg3_value * loss_riskvalue.weight) AS dg3_src,
              sum(loss_riskvalue.dg4_value * loss_riskvalue.weight) AS dg4_src,
