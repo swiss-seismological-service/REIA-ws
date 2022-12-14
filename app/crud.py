@@ -52,7 +52,7 @@ def read_country_loss(db: Session, calculation_id, loss_category):
         .group_by(
             ((LossValue._losscalculationbranch_oid *
               (10 ** 6))+LossValue.eventid).label('event'))
-
+    print(stmt)
     return pd.read_sql(stmt, db.get_bind())
 
 
