@@ -4,12 +4,12 @@ from datetime import datetime
 import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from reia.datamodel import (AggregationTag, Asset, Calculation,
+from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
                             DamageCalculationBranch, DamageValue,
                             EarthquakeInformation, ELossCategory,
                             ExposureModel, LossCalculation, LossValue,
                             asset_aggregationtag, riskvalue_aggregationtag)
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, with_polymorphic
 
 
@@ -23,6 +23,10 @@ def tagname_filter(f, model): return model.aggregationtags.any(
 
 def tagname_like_filter(f, model): return model.aggregationtags.any(
     AggregationTag.name.like(f)) if f else True
+
+
+def tagtype_filter(t, model): return model.aggregationtags.any(
+    AggregationTag.type == t) if t else True
 
 
 def calculationid_filter(f, model):
@@ -52,7 +56,7 @@ def read_country_loss(db: Session, calculation_id, loss_category):
         .group_by(
             ((LossValue._losscalculationbranch_oid *
               (10 ** 6))+LossValue.eventid).label('event'))
-    print(stmt)
+
     return pd.read_sql(stmt, db.get_bind())
 
 
@@ -93,21 +97,9 @@ def read_aggregated_loss(db: Session,
                          filter_like_tag: str | None = None) \
         -> pd.DataFrame:
 
-    filter = calculationid_filter(calculation_id, LossValue)
-    filter &= losscategory_filter(loss_category, LossValue)
-    filter &= tagname_filter(filter_tag, LossValue)
-    filter &= tagname_like_filter(filter_like_tag, LossValue)
+    stmt = f"SELECT lr.loss_value, tags_of_type.name AS \"{aggregation_type}\", lr.weight FROM  (SELECT * FROM loss_riskvalue as lr  WHERE lr._calculation_oid = {calculation_id} AND lr.losscategory = '{loss_category.value.upper()}'  AND lr._type = 'LOSS' ) AS lr  JOIN loss_assoc_riskvalue_aggregationtag AS assoc  ON lr._oid = assoc.riskvalue  AND lr._calculation_oid = assoc._calculation_oid  AND lr.losscategory = assoc.losscategory JOIN ( SELECT  loss_aggregationtag._oid AS _oid,  loss_aggregationtag.type AS type,  loss_aggregationtag.name AS name  FROM  loss_aggregationtag  WHERE  loss_aggregationtag.type = '{aggregation_type}' AND loss_aggregationtag.name LIKE '{filter_like_tag}%') AS tags_of_type  ON tags_of_type._oid = assoc.aggregationtag  WHERE  tags_of_type.name LIKE '{filter_like_tag}%' AND lr.losscategory = '{loss_category.value.upper()}'  AND lr._calculation_oid = {calculation_id} AND lr._type = 'LOSS'"  # noqa
 
-    type_sub = aggregation_type_subquery(aggregation_type)
-
-    stmt = select(LossValue.loss_value,
-                  type_sub.c.name.label(aggregation_type),
-                  LossValue.weight) \
-        .select_from(LossValue)\
-        .where(filter) \
-        .join(riskvalue_aggregationtag) \
-        .join(type_sub)
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(text(stmt), db.get_bind())
 
 
 def read_aggregated_damage(db: Session,
@@ -118,26 +110,30 @@ def read_aggregated_damage(db: Session,
                            filter_like_tag: str | None = None) \
         -> pd.DataFrame:
 
-    filter = calculationid_filter(calculation_id, DamageValue)
-    filter &= losscategory_filter(loss_category, DamageValue)
-    filter &= tagname_filter(filter_tag, DamageValue)
-    filter &= tagname_like_filter(filter_like_tag, DamageValue)
+    # filter = calculationid_filter(calculation_id, DamageValue)
+    # filter &= losscategory_filter(loss_category, DamageValue)
+    # filter &= tagname_filter(filter_tag, DamageValue)
+    # filter &= tagname_like_filter(
+    #     filter_like_tag, DamageValue)
 
-    type_sub = aggregation_type_subquery(aggregation_type)
+    # type_sub = aggregation_type_subquery(aggregation_type)
 
-    damagevalues = DamageValue.dg2_value + \
-        DamageValue.dg3_value + \
-        DamageValue.dg4_value + \
-        DamageValue.dg5_value \
+    # damagevalues = DamageValue.dg2_value + \
+    #     DamageValue.dg3_value + \
+    #     DamageValue.dg4_value + \
+    #     DamageValue.dg5_value \
 
-    stmt = select(damagevalues.label('damage_value'),
-                  type_sub.c.name.label(aggregation_type),
-                  DamageValue.weight) \
-        .select_from(DamageValue)\
-        .where(filter) \
-        .join(riskvalue_aggregationtag) \
-        .join(type_sub)
-    return pd.read_sql(stmt, db.get_bind())
+    # stmt = select(damagevalues.label('damage_value'),
+    #               type_sub.c.name.label(aggregation_type),
+    #               DamageValue.weight) \
+    #     .select_from(DamageValue)\
+    #     .where(filter) \
+    #     .join(riskvalue_aggregationtag) \
+    #     .join(type_sub)
+
+    stmt = f"SELECT (lr.dg2_value + lr.dg3_value + lr.dg4_value + lr.dg5_value) AS damage_value, lr.weight, tags_of_type.ag_name AS \"{aggregation_type}\" FROM  (SELECT * FROM loss_riskvalue as lr  WHERE lr._calculation_oid = {calculation_id} AND lr.losscategory = '{loss_category.value.upper()}'  AND lr._type = 'DAMAGE' ) AS lr  JOIN loss_assoc_riskvalue_aggregationtag AS assoc  ON (lr._oid = assoc.riskvalue  AND lr._calculation_oid = assoc._calculation_oid  AND lr.losscategory = assoc.losscategory) JOIN ( SELECT  loss_aggregationtag._oid AS _oid,  loss_aggregationtag.type AS type,  loss_aggregationtag.name AS ag_name  FROM  loss_aggregationtag  WHERE  loss_aggregationtag.type = '{aggregation_type}' AND loss_aggregationtag.name LIKE '{filter_like_tag}%' ) AS tags_of_type  ON tags_of_type._oid = assoc.aggregationtag  WHERE  tags_of_type.ag_name LIKE '{filter_like_tag}%' AND lr.losscategory = '{loss_category.value.upper()}'  AND lr._calculation_oid = {calculation_id} AND lr._type = 'DAMAGE'"  # noqa
+
+    return pd.read_sql(text(stmt), db.get_bind())
 
 
 def read_earthquakes(db: Session, starttime: datetime | None,
