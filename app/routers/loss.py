@@ -21,7 +21,10 @@ async def get_country_losses(calculation_id: int,
     """
 
     db_result = crud.read_country_loss(db, calculation_id, loss_category)
-    print(db_result)
+
+    if db_result.empty:
+        raise HTTPException(status_code=404, detail="No loss found.")
+
     mean = (db_result['loss_value']*db_result['weight']).sum()
     q10, q90 = weighted_quantile(
         db_result['loss_value'], (0.1, 0.9), db_result['weight'])
