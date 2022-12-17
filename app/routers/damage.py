@@ -1,5 +1,5 @@
-from reia.datamodel import ELossCategory
 from fastapi import APIRouter, Depends, HTTPException
+from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -24,6 +24,12 @@ async def get_damage(calculation_id: int,
 
     like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
 
+    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+
+    if tags.empty:
+        raise HTTPException(
+            status_code=404, detail="No aggregationtags found.")
+
     db_result = crud.read_aggregated_damage(
         db, calculation_id,
         aggregation_type,
@@ -36,7 +42,11 @@ async def get_damage(calculation_id: int,
         filter_like_tag=like_tag)
 
     if db_result.empty or db_buildings.empty:
-        raise HTTPException(status_code=404, detail="No damage found.")
+        if not crud.read_calculation(db, calculation_id):
+            raise HTTPException(status_code=404, detail="No damage found.")
+
+    db_result = db_result.merge(
+        tags, how='outer', on=aggregation_type).fillna(0)
 
     result = []
 

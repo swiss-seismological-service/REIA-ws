@@ -147,7 +147,15 @@ def read_aggregated_loss(db: Session,
             risk_sub.c.losscategory == loss_category,
             risk_sub.c._calculation_oid == calculation_id
         ))
+    return pd.read_sql(stmt, db.get_bind())
 
+
+def read_aggregationtags(db: Session, aggregation_type: str,
+                         tag_like: str | None):
+    stmt = select(AggregationTag.name.label(aggregation_type)).where(and_(
+        AggregationTag.type == aggregation_type,
+        AggregationTag.name.like(tag_like) if tag_like else True
+    ))
     return pd.read_sql(stmt, db.get_bind())
 
 
@@ -244,7 +252,7 @@ def read_calculations(db: Session, starttime: datetime | None,
     return db.execute(stmt).unique().scalars().all()
 
 
-def read_calculation(db: Session, id: int) -> list[Calculation]:
+def read_calculation(db: Session, id: int) -> Calculation:
     all_calculations = with_polymorphic(Calculation, [LossCalculation])
     stmt = select(all_calculations).where(Calculation._oid == id)
     return db.execute(stmt).unique().scalar()

@@ -52,6 +52,12 @@ async def get_losses(calculation_id: int,
     """
     like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
 
+    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+
+    if tags.empty:
+        raise HTTPException(
+            status_code=404, detail="No aggregationtags found.")
+
     db_result = \
         crud.read_aggregated_loss(db,
                                   calculation_id,
@@ -60,7 +66,11 @@ async def get_losses(calculation_id: int,
                                   filter_like_tag=like_tag)
 
     if db_result.empty:
-        raise HTTPException(status_code=404, detail="No loss found.")
+        if not crud.read_calculation(db, calculation_id):
+            raise HTTPException(status_code=404, detail="No loss found.")
+
+    db_result = db_result.merge(
+        tags, how='outer', on=aggregation_type).fillna(0)
 
     result = []
 

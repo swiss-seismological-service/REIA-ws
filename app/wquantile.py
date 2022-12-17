@@ -37,6 +37,8 @@ def weighted_quantile(values, quantiles, sample_weight=None,
         sample_weight = sample_weight[sorter]
 
     weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
-    weighted_quantiles /= np.sum(sample_weight)
+    sum_weight = np.sum(sample_weight)
+    if sum_weight != 0:
+        weighted_quantiles /= np.sum(sample_weight)
 
     return np.interp(quantiles, weighted_quantiles, values)
