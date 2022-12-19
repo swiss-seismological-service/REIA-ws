@@ -1,4 +1,3 @@
-
 WITH 
 cte2 AS MATERIALIZED (
 SELECT 
@@ -20,63 +19,65 @@ FROM
 		ON loss_exposuremodel._oid = loss_calculationbranch._exposuremodel_oid 
 		JOIN loss_calculation 
 		ON loss_calculation._oid = loss_damagecalculationbranch._calculation_oid 
-		WHERE loss_calculation._oid = 6
+		WHERE loss_calculation._oid = 24
 		LIMIT 1
 	) AS exposuremodel 
 	ON exposuremodel._oid = loss_asset._exposuremodel_oid 
-	WHERE tags_of_type.name LIKE 'SG%'
+	WHERE tags_of_type.name LIKE 'AG%'
 	AND tags_of_type.type = 'CantonGemeinde'
 GROUP BY tags_of_type.name
 ORDER BY tags_of_type.name
 )
 SELECT 
-	lr.ag_name AS tag_name,
-	round(lr.damaged_buildings/cte2.total_buildings*100) AS damage,
-	cte2.total_buildings as tot,
+	round(coalesce(results.damaged_buildings, 0)/cte2.total_buildings*100) AS damage,
+	tags.name AS tag_name,
 	municipalities.gid AS gid,
 	municipalities.name as municipality_name,
 	municipalities.geom AS the_geom
 FROM (
-	SELECT 
-		sum( ( lr.dg2_value +
-				+ lr.dg3_value +
-				+ lr.dg4_value +
-				+ lr.dg5_value
+	SELECT
+		sum(( lr.dg2_value +
+			+ lr.dg3_value +
+			+ lr.dg4_value +
+			+ lr.dg5_value
 			) * lr.weight
 		) AS damaged_buildings,
-		tags_of_type.ag_name AS ag_name
+		assoc.aggregationtag
 	FROM 
 		(SELECT * FROM loss_riskvalue as lr 
-			WHERE lr._calculation_oid = 6
-			AND lr.losscategory = 'STRUCTURAL' 
-			AND lr._type = 'DAMAGE'
+		 WHERE lr._calculation_oid = 24
+		 AND lr.losscategory = 'STRUCTURAL' 
+		 AND lr._type = 'DAMAGE'
 		)
 		AS lr 
-		JOIN loss_assoc_riskvalue_aggregationtag AS assoc 
-		ON (lr._oid = assoc.riskvalue 
-			AND lr._calculation_oid = assoc._calculation_oid 
-			AND lr.losscategory = assoc.losscategory)
-		JOIN (
-			SELECT 
-				loss_aggregationtag._oid AS _oid, 
-				loss_aggregationtag.type AS type, 
-				loss_aggregationtag.name AS ag_name 
-			FROM 
-				loss_aggregationtag 
-			WHERE 
-				loss_aggregationtag.type = 'CantonGemeinde'
-				AND loss_aggregationtag.name LIKE 'SG%'
-		) AS tags_of_type 
-		ON tags_of_type._oid = assoc.aggregationtag 
+	JOIN (
+		SELECT * FROM
+			loss_assoc_riskvalue_aggregationtag as assoc
+		WHERE
+			assoc.aggregationtype = 'CantonGemeinde'
+	) AS assoc 
+	ON 
+		lr._oid = assoc.riskvalue 
+		AND lr._calculation_oid = assoc._calculation_oid 
+		AND lr.losscategory = assoc.losscategory
+	GROUP BY assoc.aggregationtag, assoc.aggregationtype 
+) AS results
+RIGHT JOIN (
+	SELECT 
+		loss_aggregationtag._oid AS _oid, 
+		loss_aggregationtag.type AS type, 
+		loss_aggregationtag.name AS name 
+	FROM 
+		loss_aggregationtag 
 	WHERE 
-		tags_of_type.ag_name LIKE 'SG%'
-		AND lr.losscategory = 'STRUCTURAL' 
-		AND lr._calculation_oid = 6
-		AND lr._type = 'DAMAGE'
-	GROUP BY tags_of_type.ag_name
-	) AS lr
-INNER JOIN municipalities
-ON (municipalities.cantongeme = lr.ag_name )
-JOIN cte2 ON municipalities.cantongeme = cte2.name
+		loss_aggregationtag.type = 'CantonGemeinde' AND
+		loss_aggregationtag.name LIKE 'AG%'
+) AS tags 
+ON 
+	tags._oid = results.aggregationtag
+RIGHT JOIN municipalities ON municipalities.cantongeme = tags.name 
+JOIN cte2 ON tags.name = cte2.name
 WHERE
-	municipalities.gdektg = 'SG'
+	municipalities.gdektg = 'AG'
+ORDER BY
+	tags.name
