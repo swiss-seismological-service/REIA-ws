@@ -195,7 +195,7 @@ def read_aggregated_loss(db: Session,
         )) \
         .join(agg_sub, and_(
             agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            # agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
+            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
         )) \
         .where(and_(
             agg_sub.c.name.like(filter_like_tag) if filter_like_tag else True,
@@ -266,7 +266,7 @@ def read_aggregated_damage(db: Session,
         )) \
         .join(agg_sub, and_(
             agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            # agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
+            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
         )) \
         .where(and_(
             agg_sub.c.name.like(filter_like_tag) if filter_like_tag else True,
