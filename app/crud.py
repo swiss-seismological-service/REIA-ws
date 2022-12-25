@@ -64,7 +64,7 @@ def read_country_loss(db: Session, calculation_id, loss_category):
         )) \
         .join(agg_sub, and_(
             agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            # agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
+            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
         )) \
         .where(and_(
             risk_sub.c.losscategory == loss_category,
@@ -78,11 +78,67 @@ def read_country_loss(db: Session, calculation_id, loss_category):
     return pd.read_sql(stmt, db.get_bind())
 
 
+def read_country_damage(db: Session, calculation_id, loss_category):
+
+    damage_sub = select(DamageValue).where(and_(
+        DamageValue._calculation_oid == calculation_id,
+        DamageValue.losscategory == loss_category,
+        DamageValue._type == ECalculationType.DAMAGE
+    )).subquery()
+
+    agg_sub = select(AggregationTag).where(
+        AggregationTag.type == 'Canton'
+    ).subquery()
+    stmt = select(func.sum(damage_sub.c.dg2_value +
+                           damage_sub.c.dg3_value +
+                           damage_sub.c.dg4_value +
+                           damage_sub.c.dg5_value).label('damage_value'),
+                  (func.sum(damage_sub.c.weight) /
+                   func.count(damage_sub.c._oid)).label('weight')
+                  ) \
+        .select_from(damage_sub) \
+        .join(riskvalue_aggregationtag, and_(
+            riskvalue_aggregationtag.c.riskvalue == damage_sub.c._oid,
+            riskvalue_aggregationtag.c.losscategory ==
+            damage_sub.c.losscategory,
+            riskvalue_aggregationtag.c._calculation_oid ==
+            damage_sub.c._calculation_oid
+        )) \
+        .join(agg_sub, and_(
+            agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
+            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
+        )) \
+        .where(and_(
+            damage_sub.c.losscategory == loss_category,
+            damage_sub.c._calculation_oid == calculation_id,
+            damage_sub.c._type == ECalculationType.DAMAGE
+        )) \
+        .group_by(
+            ((damage_sub.c._damagecalculationbranch_oid *
+              (10 ** 9))+damage_sub.c.eventid).label('event'))
+
+    return pd.read_sql(stmt, db.get_bind())
+
+
+def read_total_buildings_country(db: Session, calculation_id: int) -> int:
+    exp_sub = select(ExposureModel._oid) \
+        .join(DamageCalculationBranch) \
+        .join(Calculation) \
+        .where(Calculation._oid == calculation_id) \
+        .limit(1).scalar_subquery()
+
+    stmt = select(func.sum(Asset.buildingcount).label('buildingcount')) \
+        .select_from(Asset) \
+        .where(Asset._exposuremodel_oid == exp_sub)
+
+    return db.execute(stmt).scalar()
+
+
 def read_total_buildings(db: Session,
                          calculation_id: int,
                          aggregation_type: str,
                          filter_tag: str | None = None,
-                         filter_like_tag: str | None = None) -> int:
+                         filter_like_tag: str | None = None) -> pd.DataFrame:
 
     type_sub = aggregation_type_subquery(aggregation_type)
 

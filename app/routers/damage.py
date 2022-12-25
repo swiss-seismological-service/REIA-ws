@@ -10,6 +10,38 @@ from app.wquantile import weighted_quantile
 router = APIRouter(prefix='/damage', tags=['damage'])
 
 
+@router.get("/{calculation_id}/{damage_category}/Country",
+            response_model=DamageValueStatisticsSchema,
+            response_model_exclude_none=True)
+async def get_country_damage(calculation_id: int,
+                             damage_category: ELossCategory,
+                             db: Session = Depends(get_db)):
+    """
+    Returns a list of all realizations of loss for a calculation.
+    """
+    db_buildings = crud.read_total_buildings_country(db, calculation_id)
+
+    db_result = crud.read_country_damage(db, calculation_id, damage_category)
+
+    if db_result.empty or not db_buildings:
+        if not crud.read_calculation(db, calculation_id):
+            raise HTTPException(status_code=404, detail="No damage found.")
+
+    mean = (db_result['damage_value']*db_result['weight']).sum()
+    q10, q90 = weighted_quantile(
+        db_result['damage_value'], (0.1, 0.9), db_result['weight'])
+
+    result = DamageValueStatisticsSchema(
+        mean=mean,
+        quantile10=q10,
+        quantile90=q90,
+        losscategory=damage_category,
+        percentage=mean/db_buildings*100,
+        tag='CH')
+
+    return result
+
+
 @router.get("/{calculation_id}/{loss_category}/{aggregation_type}",
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
