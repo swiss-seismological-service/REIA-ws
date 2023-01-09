@@ -1,4 +1,6 @@
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
 
@@ -46,6 +48,7 @@ async def get_losses(calculation_id: int,
                      aggregation_type: str,
                      loss_category: ELossCategory,
                      aggregation_tag: str | None = None,
+                     format: str = 'json',
                      db: Session = Depends(get_db)):
     """
     Returns a list of all realizations of loss for a calculation.
@@ -72,20 +75,46 @@ async def get_losses(calculation_id: int,
     db_result = db_result.merge(
         tags, how='outer', on=aggregation_type).fillna(0)
 
-    result = []
+    db_result['weighted'] = db_result['weight'] * db_result['loss_value']
+    # print(db_result.loc[db_result['Canton'] == 'AR']['weight'].sum())
+    db_result_statistics = pd.DataFrame()
+    db_result_statistics['mean'] = \
+        db_result.groupby(aggregation_type)['weighted'].sum()
 
-    for tag, group in db_result.groupby(aggregation_type):
-        mean = (group['weight']*group['loss_value']).sum()
-        q10, q90 = weighted_quantile(
-            group['loss_value'], (0.1, 0.9), group['weight'])
+    db_result_statistics['quantile10'], db_result_statistics['quantile90'] = \
+        zip(*db_result.groupby(aggregation_type).apply(
+            lambda x: weighted_quantile(
+                x['loss_value'], (0.1, 0.9), x['weight'])))
+    db_result_statistics['losscategory'] = loss_category.value
 
-        result.append(
-            RiskValueStatisticsSchema(
-                mean=mean,
-                quantile10=q10,
-                quantile90=q90,
-                losscategory=loss_category,
-                tag=tag)
-        )
+    db_result_statistics = db_result_statistics.rename_axis(
+        'tag').reset_index()
+
+    if format == 'csv':
+        output = db_result_statistics.to_csv(index=False)
+        return StreamingResponse(
+            iter([output]),
+            media_type='text/csv',
+            headers={"Content-Disposition":
+                     "attachment;filename=loss.csv"})
+
+    result = [RiskValueStatisticsSchema(**x)
+              for x in db_result_statistics.to_dict('records')]
+
+    # result = []
+
+    # for tag, group in db_result.groupby(aggregation_type):
+    #     mean = (group['weight']*group['loss_value']).sum()
+    #     q10, q90 = weighted_quantile(
+    #         group['loss_value'], (0.1, 0.9), group['weight'])
+
+    #     result.append(
+    #         RiskValueStatisticsSchema(
+    #             mean=mean,
+    #             quantile10=q10,
+    #             quantile90=q90,
+    #             losscategory=loss_category,
+    #             tag=tag)
+    #     )
 
     return result
