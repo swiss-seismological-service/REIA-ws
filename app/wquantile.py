@@ -35,8 +35,6 @@ def weighted_quantile(values, quantiles, weights):
     if sum_weight != 1 and sum_weight < 1:
         values, weights = add_missing_zeroes(values, weights)
 
-    print(np.sum(values*weights))
-
     assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
         'quantiles should be in [0, 1]'
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.dependencies import get_db
 from app.schemas import RiskValueStatisticsSchema
-from app.wquantile import weighted_quantile
+from app.wquantile import wquantile
 
 router = APIRouter(prefix='/loss', tags=['loss'])
 
@@ -26,7 +26,7 @@ async def get_country_losses(calculation_id: int,
         raise HTTPException(status_code=404, detail="No loss found.")
 
     mean = (db_result['loss_value']*db_result['weight']).sum()
-    q10, q90 = weighted_quantile(
+    q10, q90 = wquantile(
         db_result['loss_value'], (0.1, 0.9), db_result['weight'])
 
     result = RiskValueStatisticsSchema(
@@ -76,7 +76,7 @@ async def get_losses(calculation_id: int,
 
     for tag, group in db_result.groupby(aggregation_type):
         mean = (group['weight']*group['loss_value']).sum()
-        q10, q90 = weighted_quantile(
+        q10, q90 = wquantile(
             group['loss_value'], (0.1, 0.9), group['weight'])
 
         result.append(
