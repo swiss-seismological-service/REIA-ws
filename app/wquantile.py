@@ -1,14 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Oct 28 13:24:01 2022
-
-@author: papadopoulos
-"""
 import numpy as np
+from scipy.stats import beta
 
 
-def weighted_quantile(values, quantiles, sample_weight=None,
-                      values_sorted=False):
+def add_missing_zeroes(values, weights):
+    zero_weight = 1 - np.sum(weights)
+    v = np.append(
+        values, [0])
+    w = np.append(
+        weights, [zero_weight])
+    return (v, w)
+
+
+def weighted_quantile(values, quantiles, weights):
     """ Very close to numpy.percentile, but supports weights.
     NOTE: quantiles should be in [0, 1]!
     :param values: numpy.array with data
@@ -19,26 +22,87 @@ def weighted_quantile(values, quantiles, sample_weight=None,
     :param old_style: if True, will correct output to be consistent
         with numpy.percentile.
     :return: numpy.array with computed quantiles.
+
+    @author: papadopoulos
+
     """
+
     values = np.array(values)
     quantiles = np.array(quantiles)
+    weights = np.array(weights)
 
-    if sample_weight is None:
-        sample_weight = np.ones(len(values))
+    sum_weight = np.sum(weights)
+    if sum_weight != 1 and sum_weight < 1:
+        values, weights = add_missing_zeroes(values, weights)
 
-    sample_weight = np.array(sample_weight)
+    print(np.sum(values*weights))
 
     assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
         'quantiles should be in [0, 1]'
 
-    if not values_sorted:
-        sorter = np.argsort(values)
-        values = values[sorter]
-        sample_weight = sample_weight[sorter]
+    sorter = np.argsort(values)
+    values = values[sorter]
+    weights = weights[sorter]
 
-    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
-    sum_weight = np.sum(sample_weight)
+    weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+
     if sum_weight != 0:
-        weighted_quantiles /= np.sum(sample_weight)
+        weighted_quantiles /= np.sum(weights)
 
     return np.interp(quantiles, weighted_quantiles, values)
+
+
+def wquantile_generic(values, quantiles, cdf_gen, weights):
+    """
+    source: https://aakinshin.net/posts/weighted-quantiles/
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    weights = np.array(weights)
+
+    sum_weight = np.sum(weights)
+
+    if sum_weight != 1 and sum_weight < 1:
+        values, weights = add_missing_zeroes(values, weights)
+
+    nw = sum(weights)**2 / sum(weights**2)
+    sorter = np.argsort(values)
+    values = values[sorter]
+    weights = weights[sorter]
+
+    weights = weights / sum(weights)
+    cdf_probs = np.cumsum(np.insert(weights, 0, [0]))
+    res = []
+    for prob in quantiles:
+        cdf = cdf_gen(nw, prob)
+        q = cdf(cdf_probs)
+        w = q[1:]-q[:-1]
+        res.append(np.sum(w*values))
+    return res
+
+
+def whdquantile(values, quantiles, weights):
+    """
+    source: https://aakinshin.net/posts/weighted-quantiles/
+    """
+    def cdf_gen_whd(n, p):
+        return lambda x: beta.cdf(x, (n + 1) * p, (n + 1) * (1 - p))
+    return wquantile_generic(values, quantiles, cdf_gen_whd, weights)
+
+
+def type_7_cdf(quantiles, n, p):
+    """
+    source: https://aakinshin.net/posts/weighted-quantiles/
+    """
+    h = p * (n - 1) + 1
+    u = np.maximum((h - 1) / n, np.minimum(h / n, quantiles))
+    return u * n - h + 1
+
+
+def wquantile(values, quantiles, weights):
+    """
+    source: https://aakinshin.net/posts/weighted-quantiles/
+    """
+    def cdf_gen_t7(n, p):
+        return lambda x: type_7_cdf(x, n, p)
+    return wquantile_generic(values, quantiles, cdf_gen_t7, weights)
