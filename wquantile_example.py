@@ -1,5 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 28 13:24:01 2022
+
+@author: papadopoulos
+"""
 import numpy as np
 from scipy.stats import beta
+
+VALUES = np.array([72379.94,  2465.5142, 15776.068, 10078.892, 36903.223, 13494.167,
+                   9598.837, 29200.87,  4241.889,  8662.3955, 46441.754,  9528.981,
+                   2668.303,  4462.573,  2481.2524,  4483.8994, 119232.805,  3789.397,
+                   6187.967, 15582.486,  4407.1133, 12258.019, 34259.535, 12024.441,
+                   64813.074, 27495.611,  3988.4214, 94528.34,  6041.626, 34713.086,
+                   53069.902,  2701.9778,  5388.111,  5615.3306,  8860.164,  7616.189,
+                   61089.168, 14259.61, 113086.37,  7238.528,  2795.9448, 19252.242,
+                   35075., 39118.04,  6292.3525, 106534.09,  2507.6934, 92436.77,
+                   89457.17,  8797.484, 20350.32,  4797.642,  5981.469, 98960.68,
+                   78348.18, 19336.91,  2777.4036,  4663.011,  9209.485])
+
+WEIGHTS = np.array([0.0001, 0.0001, 0.0001, 0.0001,
+                    0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                    0.0001, 0.0001, 0.0001, 0.0001,
+                    0.0001, 0.00015, 0.00015, 0.0001, 0.0001,
+                    0.0001, 0.0001, 0.0001, 0.00015,
+                    0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                    0.0001, 0.0001, 0.0001, 0.0003,
+                    0.0003, 0.0003, 0.00045, 0.0003, 0.0003,
+                    0.0003, 0.0003, 0.0003, 0.0003,
+                    0.0003, 0.0003, 0.0003, 0.0003, 0.0003,
+                    0.0003, 0.0003, 0.0003, 0.0003,
+                    0.0003, 0.0003, 0.0003, 0.0003, 0.0003,
+                    0.0003, 0.0003, 0.0003, 0.00045, 0.0003])
 
 
 def add_missing_zeroes(values, weights):
@@ -14,7 +45,6 @@ def add_missing_zeroes(values, weights):
 def weighted_quantile(values, quantiles, weights):
     """
     Calculates Quantiles of a weighted list of samples.
-
     Implementation for C=0 of:
     https://en.wikipedia.org/wiki/Percentile#The_weighted_percentile_method
 
@@ -48,6 +78,7 @@ def weighted_quantile(values, quantiles, weights):
     if sum_weight != 0:
         weighted_quantiles /= np.sum(weights)
 
+    print(weighted_quantiles, values)
     return np.interp(quantiles, weighted_quantiles, values)
 
 
@@ -105,3 +136,12 @@ def wquantile(values, quantiles, weights):
     def cdf_gen_t7(n, p):
         return lambda x: type_7_cdf(x, n, p)
     return wquantile_generic(values, quantiles, cdf_gen_t7, weights)
+
+
+if __name__ == '__main__':
+    q10, q90 = weighted_quantile(VALUES, (0.1, 0.9), WEIGHTS)
+    print(q10, q90)
+    q10, q90 = whdquantile(VALUES, (0.1, 0.9), WEIGHTS)
+    print(q10, q90)
+    q10, q90 = wquantile(VALUES, (0.1, 0.9), WEIGHTS)
+    print(q10, q90)
