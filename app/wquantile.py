@@ -33,20 +33,19 @@ def weighted_quantile(values, quantiles, weights):
 
     sum_weight = np.sum(weights)
 
-    if sum_weight != 1 and sum_weight < 1:
-        values, weights = add_missing_zeroes(values, weights)
-
     assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
         'Quantiles should be in [0, 1]'
+
+    assert sum_weight <= 1, 'The sum of the weights must be <=1'
+
+    if sum_weight < 1:
+        values, weights = add_missing_zeroes(values, weights)
 
     sorter = np.argsort(values)
     values = values[sorter]
     weights = weights[sorter]
 
     weighted_quantiles = np.cumsum(weights)  # C=0
-
-    if sum_weight != 0:
-        weighted_quantiles /= np.sum(weights)
 
     return np.interp(quantiles, weighted_quantiles, values)
 
