@@ -86,7 +86,7 @@ async def get_damage(calculation_id: int,
 
     percentages = pd.DataFrame(
         {'percentage': statistics.set_index('tag')['mean'] /
-         db_buildings.set_index('Canton')['buildingcount'] * 100})
+         db_buildings.set_index(aggregation_type)['buildingcount'] * 100})
 
     statistics = statistics.merge(percentages, how='outer', on='tag').fillna(0)
 
