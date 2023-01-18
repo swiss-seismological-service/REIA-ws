@@ -50,11 +50,8 @@ def generate_urls(earthquakes):
                 url = f'{event_url}?canton={c}&lng={lng}'
                 eq_dict[c][lng] = base64.b64encode(
                     url.encode('ascii')).decode('ascii')
-                break
-            break
         d = {e['event_text']: eq_dict}
         urls.append(d)
-        break
 
     return urls
 
