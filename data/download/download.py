@@ -225,8 +225,8 @@ def download_scenarios(urls, base_dir, historical):
 
     for lng in LANGUAGES:
         if historical:
-            event_name = f"{info['city']} "
-            f"{HISTORISCHE_SZENARIEN_JAHRE[info['city']]}"
+            event_name = f"{info['city']} " \
+                f"{HISTORISCHE_SZENARIEN_JAHRE[info['city'].strip()]}"
 
             event_dir = os.path.join(
                 base_dir, LANGUAGE_NAMES[lng],
@@ -303,9 +303,15 @@ def download():
     historical_scenarios = [
         u for u in urls if float(u['earthquake']['magnitude']) != 6]
 
+    cantonal_args = list(zip(
+        cantonal_scenarios, repeat(base_dir), repeat(False)))
+
+    historical_args = list(zip(
+        historical_scenarios, repeat(base_dir), repeat(True)))
+    all_args = cantonal_args + historical_args
+
     with mp.Pool(2) as pool:
-        pool.starmap(download_scenarios, zip(
-            cantonal_scenarios, repeat(base_dir), repeat(False)))
+        pool.starmap(download_scenarios, all_args)
 
 
 if __name__ == '__main__':
