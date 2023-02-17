@@ -1,0 +1,36 @@
+version: '3.9'
+services:
+  db:
+      container_name: ria-postgres
+      image: postgis/postgis:latest
+      restart: unless-stopped
+      env_file:
+        - .env
+      ports:
+        - "5432:5432"
+      shm_size: 1gb
+      volumes:
+        - pg_data:/var/lib/postgresql/data/
+        - ./db/init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+        - ./db/municipalities.sql:/etc/postgresql/municipalities.sql
+        - ./db/postgresql.conf:/etc/postgresql/postgresql.conf
+      command: postgres -c config_file=/etc/postgresql/postgresql.conf
+      networks:
+        - backend
+  pgadmin:
+    container_name: ria-pgadmin
+    image: dpage/pgadmin4:6.20
+    env_file:
+      - .env
+    volumes:
+       - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5433:80"
+    networks:
+      - backend
+    restart: unless-stopped
+volumes:
+  pg_data: {}
+  pgadmin: {}
+networks:
+  backend: {}
