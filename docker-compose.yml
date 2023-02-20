@@ -12,7 +12,7 @@ services:
       volumes:
         - pg_data:/var/lib/postgresql/data/
         - ./db/init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
-        - ./db/municipalities.sql:/etc/postgresql/municipalities.sql
+        - ./db/data/municipalities.sql:/etc/postgresql/municipalities.sql
         - ./db/postgresql.conf:/etc/postgresql/postgresql.conf
       command: postgres -c config_file=/etc/postgresql/postgresql.conf
       networks:
@@ -29,6 +29,23 @@ services:
     networks:
       - backend
     restart: unless-stopped
+
+  app:
+    container_name: ria-ws
+    build: .
+    restart: unless-stopped
+    depends_on: 
+      - db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=ria-postgres
+    ports: 
+      - "8000:8000"
+    networks:
+      - backend
+
+
 volumes:
   pg_data: {}
   pgadmin: {}

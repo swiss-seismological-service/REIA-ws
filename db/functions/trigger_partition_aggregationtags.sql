@@ -16,15 +16,6 @@ BEGIN
 			EXECUTE format(E'CREATE TABLE %I PARTITION OF loss_aggregationtag FOR VALUES IN (''%s'')', partition_name_type, _elem);
 		END IF;
 	END LOOP;
-	-- partition_name_type := 'loss_assoc_asset_aggregationtag_' || NEW._oid;
-	-- IF NOT EXISTS
-	-- 	(SELECT 1
-	-- 	 FROM   information_schema.tables 
-	-- 	 WHERE  table_name = partition_name_type) 
-	-- THEN
-	-- 	RAISE NOTICE 'A partition has been created %', partition_name_type;
-	-- 	EXECUTE format(E'CREATE TABLE %I PARTITION OF loss_assoc_asset_aggregationtag FOR VALUES IN (%s)', partition_name_type, NEW._oid);
-	-- END IF;
 RETURN NEW;
 END
 $$

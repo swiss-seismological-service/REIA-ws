@@ -37,6 +37,6 @@ END
 $$
 LANGUAGE plpgsql;
 
-CREATE TRIGGER insert_calculation_trigger
+CREATE OR REPLACE TRIGGER insert_calculation_trigger
     BEFORE INSERT ON public.loss_calculation
     FOR EACH ROW EXECUTE PROCEDURE public.calculation_partition_function();
