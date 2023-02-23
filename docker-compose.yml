@@ -6,6 +6,11 @@ services:
       restart: unless-stopped
       env_file:
         - .env
+      healthcheck:
+        test: [ "CMD", "pg_isready", "-q", "-d", "${DB_NAME}", "-U", "${DB_USER}" ]
+        timeout: 45s
+        interval: 5s
+        retries: 20
       ports:
         - "5432:5432"
       shm_size: 1gb
@@ -34,8 +39,9 @@ services:
     container_name: ria-ws
     build: .
     restart: unless-stopped
-    depends_on: 
-      - db
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:
