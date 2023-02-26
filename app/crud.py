@@ -358,7 +358,8 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
                    " depth_value,"
                    " latitude_value, longitude_value"
                    " FROM public.sm_origin"
-                   f" WHERE origin_publicid IN {originids};")
+                   " WHERE origin_publicid IN ({});".format(
+                       ','.join(['%s'] * len(originids))), originids)
 
     db_earthquakes = cursor.fetchall()
     cursor.close()
