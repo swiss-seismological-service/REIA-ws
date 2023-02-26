@@ -75,7 +75,7 @@ def read_country_loss(db: Session, calculation_id, loss_category):
             ((risk_sub.c._losscalculationbranch_oid *
               (10 ** 9))+risk_sub.c.eventid).label('event'))
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_country_damage(db: Session, calculation_id, loss_category):
@@ -117,7 +117,7 @@ def read_country_damage(db: Session, calculation_id, loss_category):
             ((damage_sub.c._damagecalculationbranch_oid *
               (10 ** 9))+damage_sub.c.eventid).label('event'))
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_total_buildings_country(db: Session, calculation_id: int) -> int:
@@ -160,7 +160,7 @@ def read_total_buildings(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_aggregated_loss(db: Session,
@@ -203,7 +203,7 @@ def read_aggregated_loss(db: Session,
             risk_sub.c.losscategory == loss_category,
             risk_sub.c._calculation_oid == calculation_id
         ))
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_aggregationtags(db: Session, aggregation_type: str,
@@ -212,7 +212,8 @@ def read_aggregationtags(db: Session, aggregation_type: str,
         AggregationTag.type == aggregation_type,
         AggregationTag.name.like(tag_like) if tag_like else True
     ))
-    return pd.read_sql(stmt, db.get_bind())
+
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_aggregated_damage(db: Session,
@@ -276,7 +277,7 @@ def read_aggregated_damage(db: Session,
             damage_sub.c._type == ECalculationType.DAMAGE
         ))
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_earthquakes(db: Session, starttime: datetime | None,
@@ -336,7 +337,7 @@ def read_mean_losses(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pd.read_sql(stmt, db.get_bind().connect())
 
 
 def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
