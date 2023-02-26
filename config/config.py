@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SHAKEMAP_USER: str
     SHAKEMAP_PASSWORD: str
     SHAKEMAP_DB: str
+    ROOT_PATH: str
 
     class Config:
         env_file = ".env"
