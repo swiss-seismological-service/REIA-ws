@@ -88,7 +88,8 @@ async def get_damage(calculation_id: int,
         {'percentage': statistics.set_index('tag')['mean'] /
          db_buildings.set_index(aggregation_type)['buildingcount'] * 100})
 
-    statistics = statistics.merge(percentages, how='outer', on='tag').fillna(0)
+    statistics = statistics.merge(
+        percentages, how='outer', left_on='tag', right_index=True).fillna(0)
 
     if format == 'csv':
         return csv_response(statistics, 'loss')
