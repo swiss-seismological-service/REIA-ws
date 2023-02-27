@@ -31,8 +31,8 @@ async def read_earthquakes(starttime: datetime | None = None,
         tuple(e.originid for e in db_result))
 
     for earthquake_info in db_result:
-        info = next(i for i in shakemap_db_infos if
-                    i['origin_publicid'] == earthquake_info.originid)
+        info = next((i for i in shakemap_db_infos if
+                    i['origin_publicid'] == earthquake_info.originid), {})
 
         for k, v in info.items():
             setattr(earthquake_info, k, v)
