@@ -6,21 +6,28 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.dependencies import get_db
-from app.schemas import (DamageCalculationSchema, EarthquakeInformationSchema,
-                         LossCalculationSchema)
+from app.schemas import (DamageCalculationSchema, LossCalculationSchema,
+                         RiskAssessmentSchema)
 
 router = APIRouter(tags=['calculations', 'earthquakes'])
 
 
-@router.get('/earthquakes', response_model=list[EarthquakeInformationSchema],
+@router.get('/riskassessments', response_model=list[RiskAssessmentSchema],
             response_model_exclude_none=True)
-async def read_earthquakes(starttime: datetime | None = None,
-                           endtime: datetime | None = None,
-                           db: Session = Depends(get_db)):
+async def read_risk_assessments(originid: str | None = None,
+                                starttime: datetime | None = None,
+                                endtime: datetime | None = None,
+                                published: bool | None = None,
+                                preferred: bool | None = None,
+                                db: Session = Depends(get_db)):
     '''
     Returns a list of Earthquakes
     '''
-    db_result = crud.read_earthquakes(db, starttime, endtime)
+    if originid:
+        originid = base64.b64decode(originid).decode('utf-8')
+
+    db_result = crud.read_risk_assessments(db, originid, starttime, endtime,
+                                           published, preferred)
 
     if not db_result:
         raise HTTPException(status_code=404, detail='No earthquakes found.')
@@ -30,41 +37,39 @@ async def read_earthquakes(starttime: datetime | None = None,
     shakemap_db_infos = crud.read_earthquakes_information(
         tuple(e.originid for e in db_result))
 
-    for earthquake_info in db_result:
+    for ra in db_result:
         info = next((i for i in shakemap_db_infos if
-                    i['origin_publicid'] == earthquake_info.originid), {})
+                    i['origin_publicid'] == ra.originid), {})
 
         for k, v in info.items():
-            setattr(earthquake_info, k, v)
+            setattr(ra, k, v)
 
         earthquake_schema = \
-            EarthquakeInformationSchema.from_orm(earthquake_info)
+            RiskAssessmentSchema.from_orm(ra)
 
         result.append(earthquake_schema)
 
     return result
 
 
-@router.get('/earthquake/{originid}',
-            response_model=EarthquakeInformationSchema,
+@router.get('/riskassessment/{oid}',
+            response_model=RiskAssessmentSchema,
             response_model_exclude_none=True)
-async def read_earthquake(originid: str, db: Session = Depends(get_db)):
+async def read_risk_assessment(oid: int, db: Session = Depends(get_db)):
     '''
     Returns the requested earthquake
     '''
-    originid = base64.b64decode(originid).decode('utf-8')
-
-    db_result = crud.read_earthquake(db, originid)
+    db_result = crud.read_risk_assessment(db, oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail='No earthquakes found.')
 
-    shakemap_db_infos = crud.read_earthquake_information(originid)
+    shakemap_db_infos = crud.read_earthquake_information(db_result.originid)
 
     for k, v in shakemap_db_infos.items():
         setattr(db_result, k, v)
 
-    db_result = EarthquakeInformationSchema.from_orm(db_result)
+    db_result = RiskAssessmentSchema.from_orm(db_result)
 
     return db_result
 

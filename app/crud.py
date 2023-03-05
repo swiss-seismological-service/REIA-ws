@@ -6,10 +6,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
                             DamageCalculationBranch, DamageValue,
-                            EarthquakeInformation, ECalculationType,
-                            ELossCategory, ExposureModel, LossCalculation,
-                            LossValue, asset_aggregationtag,
-                            riskvalue_aggregationtag)
+                            ECalculationType, ELossCategory, ExposureModel,
+                            LossCalculation, LossValue, RiskAssessment,
+                            asset_aggregationtag, riskvalue_aggregationtag)
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
@@ -280,19 +279,31 @@ def read_aggregated_damage(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
-def read_earthquakes(db: Session, starttime: datetime | None,
-                     endtime: datetime | None) -> list[EarthquakeInformation]:
-    stmt = select(EarthquakeInformation)
+def read_risk_assessments(
+    db: Session, originid: str | None,
+        starttime: datetime | None = None,
+        endtime: datetime | None = None,
+        published: bool | None = None,
+        preferred: bool | None = None) -> list[RiskAssessment]:
+
+    stmt = select(RiskAssessment)
     if starttime:
-        stmt = stmt.filter(EarthquakeInformation.time >= starttime)
+        stmt = stmt.filter(
+            RiskAssessment.creationinfo_creationtime >= starttime)
     if endtime:
-        stmt = stmt.filter(EarthquakeInformation.time <= endtime)
+        stmt = stmt.filter(RiskAssessment.creationinfo_creationtime <= endtime)
+    if originid:
+        stmt = stmt.filter(RiskAssessment.originid == originid)
+    if published:
+        stmt = stmt.filter(RiskAssessment.published == published)
+    if preferred:
+        stmt = stmt.filter(RiskAssessment.preferred == preferred)
     return db.execute(stmt).unique().scalars().all()
 
 
-def read_earthquake(db: Session, originid: str) -> list[EarthquakeInformation]:
-    stmt = select(EarthquakeInformation).where(
-        EarthquakeInformation.originid == originid)
+def read_risk_assessment(db: Session, oid: int) -> RiskAssessment:
+    stmt = select(RiskAssessment).where(
+        RiskAssessment._oid == oid)
     return db.execute(stmt).unique().scalar()
 
 
