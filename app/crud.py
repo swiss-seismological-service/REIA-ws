@@ -355,7 +355,7 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
 
     from config.config import get_settings
     settings = get_settings()
-    conn = psycopg2.connect(settings.SHAKEMAP_STRING)
+    conn = psycopg2.connect(settings.SHAKEMAPDB_STRING)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT"
@@ -377,6 +377,35 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
     cursor.close()
     conn.close()
     return [{k: v for k, v in d.items()} for d in db_earthquakes]
+
+
+def read_danger_level(originid: str) -> int:
+    from config.config import get_settings
+    settings = get_settings()
+    conn = psycopg2.connect(settings.DANGERDB_STRING)
+
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        "select (xpath('//mydefns:alert/mydefns:info/mydefns:parameter/mydefns:value/text()', encode(m_data, 'escape')::xml, ARRAY[ARRAY['mydefns', 'urn:oasis:names:tc:emergency:cap:1.2']] ) )[1] as alarmlevel"
+        "          from product"
+        "          where m_producttype = 'cap-with-zones-text-message' "
+        "                                                 and m_referredpublicobject in "
+        "                                             (select anyorigin.m_originid "
+        "                                                              from event inner join originreference as anyorigin on anyorigin._parent_oid = event._oid"
+        "                                                                                inner join originreference as myorigin on myorigin._parent_oid = event._oid"
+        "                      where anyorigin.m_originid = product.m_referredpublicobject "
+        "                      and myorigin.m_originid = '{}'"
+        "          order by product._oid desc limit 1)"
+        "        order by product._oid desc limit 1".format(originid)
+    )
+
+    danger_level = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if danger_level and 'alarmlevel' in danger_level:
+        return int(danger_level['alarmlevel'])
+    else:
+        return None
 
 
 def read_earthquake_information(originid: str) -> dict:

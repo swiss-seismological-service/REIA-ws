@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SHAKEMAP_USER: str
     SHAKEMAP_PASSWORD: str
     SHAKEMAP_DB: str
+    DANGERLEVEL_DB: str
     ROOT_PATH: str
 
     class Config:
@@ -22,7 +23,12 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings():
-    Settings.SHAKEMAP_STRING = f'dbname={Settings().SHAKEMAP_DB} ' \
+    Settings.SHAKEMAPDB_STRING = f'dbname={Settings().SHAKEMAP_DB} ' \
+        f'user={Settings().SHAKEMAP_USER} ' \
+        f'host={Settings().SHAKEMAP_SERVER} ' \
+        f'password={Settings().SHAKEMAP_PASSWORD} ' \
+        f'port={Settings().SHAKEMAP_PORT}'
+    Settings.DANGERDB_STRING = f'dbname={Settings().DANGERLEVEL_DB} ' \
         f'user={Settings().SHAKEMAP_USER} ' \
         f'host={Settings().SHAKEMAP_SERVER} ' \
         f'password={Settings().SHAKEMAP_PASSWORD} ' \

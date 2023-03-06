@@ -12,6 +12,13 @@ from app.schemas import (DamageCalculationSchema, LossCalculationSchema,
 router = APIRouter(tags=['calculations', 'earthquakes'])
 
 
+@router.get('/dangerlevel/{originid}')
+async def read_danger_level(originid: str, db: Session = Depends(get_db)):
+    originid = base64.b64decode(originid).decode('utf-8')
+    db_result = crud.read_danger_level(originid)
+    return {'danger_level': db_result}
+
+
 @router.get('/riskassessments', response_model=list[RiskAssessmentSchema],
             response_model_exclude_none=True)
 async def read_risk_assessments(originid: str | None = None,
