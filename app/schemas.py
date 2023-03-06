@@ -123,8 +123,8 @@ class RiskAssessmentSchema(BaseModel):
     oid: int = Field(..., alias='_oid')
     originid: str
     type: EEarthquakeType
-    losscalculation: CalculationSchema
-    damagecalculation: CalculationSchema
+    losscalculation: CalculationSchema | None
+    damagecalculation: CalculationSchema | None
     event_text: Optional[str]
     description_de: str | None = None
     description_fr: str | None = None
