@@ -411,7 +411,7 @@ def read_danger_level(originid: str) -> int:
 def read_earthquake_information(originid: str) -> dict:
     from config.config import get_settings
     settings = get_settings()
-    conn = psycopg2.connect(settings.SHAKEMAP_STRING)
+    conn = psycopg2.connect(settings.SHAKEMAPDB_STRING)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT"
