@@ -428,7 +428,7 @@ def read_earthquake_information(originid: str) -> dict:
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid = '{originid}';")
 
-    db_earthquake = cursor.fetchone()
+    db_earthquake = cursor.fetchone() or {}
     cursor.close()
     conn.close()
     return {k: v for k, v in db_earthquake.items()}
