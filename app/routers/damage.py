@@ -28,7 +28,13 @@ async def get_country_damage(calculation_id: int,
     if db_result.empty or not db_buildings:
         if not crud.read_calculation(db, calculation_id):
             raise HTTPException(status_code=404, detail="No damage found.")
-
+        else:
+            return DamageValueStatisticsSchema(mean=0,
+                                               quantile10=0,
+                                               quantile90=0,
+                                               percentage=0,
+                                               losscategory=damage_category,
+                                               tag='CH')
     db_result['Country'] = 'CH'
 
     statistics = calculate_statistics(db_result, 'Country')

@@ -24,7 +24,14 @@ async def get_country_losses(calculation_id: int,
     db_result = crud.read_country_loss(db, calculation_id, loss_category)
 
     if db_result.empty:
-        raise HTTPException(status_code=404, detail="No loss found.")
+        if not crud.read_calculation(db, calculation_id):
+            raise HTTPException(status_code=404, detail="No loss found.")
+        else:
+            return RiskValueStatisticsSchema(mean=0,
+                                             quantile10=0,
+                                             quantile90=0,
+                                             losscategory=loss_category,
+                                             tag='CH')
 
     db_result['Country'] = 'CH'
 
@@ -65,7 +72,7 @@ async def get_losses(calculation_id: int,
                                   aggregation_type,
                                   loss_category,
                                   filter_like_tag=like_tag)
-
+    print(db_result)
     if db_result.empty:
         if not crud.read_calculation(db, calculation_id):
             raise HTTPException(status_code=404, detail="No loss found.")
