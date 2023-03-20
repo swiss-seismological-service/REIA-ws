@@ -351,11 +351,33 @@ def read_mean_losses(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
+def read_region_name(originids: tuple[str]) -> str:
+    from config.config import get_settings
+    settings = get_settings()
+    conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
+
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        "select originreference.m_originid, "
+        "eventdescription.m_text as region_name "
+        "from eventdescription "
+        "inner join event on eventdescription._parent_oid = event._oid "
+        "inner join originreference on "
+        "originreference._parent_oid = event._oid "
+        "where eventdescription.m_type = 'region name' "
+        "and originreference.m_originid in  ({});".format(
+            ','.join(['%s'] * len(originids))), originids)
+    db_earthquakes = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [{k: v for k, v in d.items()} for d in db_earthquakes]
+
+
 def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
 
     from config.config import get_settings
     settings = get_settings()
-    conn = psycopg2.connect(settings.SHAKEMAPDB_STRING)
+    conn = psycopg2.connect(settings.SCENARIO_INFO)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT"
@@ -382,7 +404,7 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
 def read_danger_level(originid: str) -> int:
     from config.config import get_settings
     settings = get_settings()
-    conn = psycopg2.connect(settings.DANGERDB_STRING)
+    conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -418,7 +440,7 @@ def read_danger_level(originid: str) -> int:
 def read_earthquake_information(originid: str) -> dict:
     from config.config import get_settings
     settings = get_settings()
-    conn = psycopg2.connect(settings.SHAKEMAPDB_STRING)
+    conn = psycopg2.connect(settings.SCENARIO_INFO)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT"
@@ -435,6 +457,50 @@ def read_earthquake_information(originid: str) -> dict:
                    " FROM public.sm_origin"
                    f" WHERE origin_publicid = '{originid}';")
 
+    db_earthquake = cursor.fetchone() or {}
+    cursor.close()
+    conn.close()
+    return {k: v for k, v in db_earthquake.items()}
+
+
+def read_ria_text(originid: str, language: str) -> str:
+    from config.config import get_settings
+    settings = get_settings()
+    conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
+
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        "select ria_text from ( "
+        "    select * from ( "
+        "        select convert_from(m_data,'UTF8') as ria_text, 1 as prio, m_producttype, m_language "
+        "        from product  "
+        "        where m_referredpublicobject = '{0}' "
+        "        order by product._oid desc "
+        "    ) as ria_text_for_this_originid "
+        "    UNION "
+        "    select * from ( "
+        "        select convert_from(m_data,'UTF8'), 2 as prio, m_producttype, m_language "
+        "        from product inner join originreference as referredoriginreference  "
+        "            on m_referredpublicobject = referredoriginreference.m_originid "
+        "        inner join event on referredoriginreference._parent_oid = event._oid "
+        "        where event.m_preferredoriginid = '{0}' "
+        "        order by product._oid desc "
+        "    ) as ria_text_for_preferred_originid "
+        "    union  "
+        "    select * from ( "
+        "        select convert_from(m_data,'UTF8'), 3 as prio, m_producttype, m_language "
+        "        from product inner join originreference as referredoriginreference  "
+        "            on m_referredpublicobject = referredoriginreference.m_originid "
+        "        inner join originreference as otheroriginreference  "
+        "            on referredoriginreference._oid <> otheroriginreference._oid "
+        "                    and referredoriginreference._parent_oid = otheroriginreference._parent_oid "
+        "        where otheroriginreference.m_originid = '{0}' "
+        "        order by product._oid desc "
+        "    ) as latest_ria_text_for_any_originid "
+        "    ) as allriatexts "
+        "    where m_producttype = 'ria-text-message' "
+        "    and m_language = '{1}' -- english, german, french, italian "
+        "    order by prio LIMIT 1 ".format(originid, language))
     db_earthquake = cursor.fetchone() or {}
     cursor.close()
     conn.close()

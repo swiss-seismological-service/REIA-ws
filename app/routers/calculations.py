@@ -19,6 +19,26 @@ async def read_danger_level(originid: str, db: Session = Depends(get_db)):
     return {'danger_level': db_result}
 
 
+@router.get('/region/{originid}')
+async def read_region_name(originid: str, db: Session = Depends(get_db)):
+    originid = base64.b64decode(originid).decode('utf-8')
+    db_result = crud.read_region_name([originid])
+    if db_result:
+        return {'region_name': db_result[0]['region_name']}
+    return {'region_name': None}
+
+
+@router.get('/description/{originid}/{lang}')
+async def read_description(originid: str,
+                           lang: str,
+                           db: Session = Depends(get_db)):
+    originid = base64.b64decode(originid).decode('utf-8')
+    db_result = crud.read_ria_text(originid, lang)
+    if db_result:
+        return {'description': db_result['ria_text']}
+    return {'description': None}
+
+
 @router.get('/riskassessments', response_model=list[RiskAssessmentSchema],
             response_model_exclude_none=True)
 async def read_risk_assessments(originid: str | None = None,

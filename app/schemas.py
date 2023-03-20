@@ -122,19 +122,26 @@ class DamageCalculationSchema(CalculationSchema):
 class RiskAssessmentSchema(BaseModel):
     oid: int = Field(..., alias='_oid')
     originid: str
+
     type: EEarthquakeType
+
     losscalculation: CalculationSchema | None
     damagecalculation: CalculationSchema | None
+
     event_text: Optional[str]
+
     description_de: str | None = None
     description_fr: str | None = None
     description_it: str | None = None
     description_en: str | None = None
+
     depth_value: Optional[float]
     time_value: datetime | None
     magnitude_value: Optional[str]
     latitude_value: Optional[float]
     longitude_value: Optional[float]
+    dangerlevel_value: Optional[int]
+
     creationinfo: CreationInfo
     preferred: bool
     published: bool
