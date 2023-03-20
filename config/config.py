@@ -9,13 +9,19 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: str
     DB_NAME: str
-    SHAKEMAP_SERVER: str
-    SHAKEMAP_PORT: str
-    SHAKEMAP_USER: str
-    SHAKEMAP_PASSWORD: str
-    SHAKEMAP_DB: str
-    DANGERLEVEL_DB: str
     ROOT_PATH: str
+
+    SCENARIO_INFO_SERVER: str
+    SCENARIO_INFO_PORT: str
+    SCENARIO_INFO_USER: str
+    SCENARIO_INFO_PASSWORD: str
+    SCENARIO_INFO_DB: str
+
+    EARTHQUAKE_INFO_SERVER: str
+    EARTHQUAKE_INFO_PORT: str
+    EARTHQUAKE_INFO_USER: str
+    EARTHQUAKE_INFO_PASSWORD: str
+    EARTHQUAKE_INFO_DB: str
 
     class Config:
         env_file = ".env"
@@ -23,14 +29,14 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings():
-    Settings.SHAKEMAPDB_STRING = f'dbname={Settings().SHAKEMAP_DB} ' \
-        f'user={Settings().SHAKEMAP_USER} ' \
-        f'host={Settings().SHAKEMAP_SERVER} ' \
-        f'password={Settings().SHAKEMAP_PASSWORD} ' \
-        f'port={Settings().SHAKEMAP_PORT}'
-    Settings.DANGERDB_STRING = f'dbname={Settings().DANGERLEVEL_DB} ' \
-        f'user={Settings().SHAKEMAP_USER} ' \
-        f'host={Settings().SHAKEMAP_SERVER} ' \
-        f'password={Settings().SHAKEMAP_PASSWORD} ' \
-        f'port={Settings().SHAKEMAP_PORT}'
+    Settings.SCENARIO_INFO = f'dbname={Settings().SCENARIO_INFO_DB} ' \
+        f'user={Settings().SCENARIO_INFO_USER} ' \
+        f'host={Settings().SCENARIO_INFO_SERVER} ' \
+        f'password={Settings().SCENARIO_INFO_PASSWORD} ' \
+        f'port={Settings().SCENARIO_INFO_PORT}'
+    Settings.EARTHQUAKE_INFO = f'dbname={Settings().EARTHQUAKE_INFO_DB} ' \
+        f'user={Settings().EARTHQUAKE_INFO_USER} ' \
+        f'host={Settings().EARTHQUAKE_INFO_SERVER} ' \
+        f'password={Settings().EARTHQUAKE_INFO_PASSWORD} ' \
+        f'port={Settings().EARTHQUAKE_INFO_PORT}'
     return Settings()
