@@ -19,6 +19,13 @@ async def read_danger_level(originid: str, db: Session = Depends(get_db)):
     return {'danger_level': db_result}
 
 
+@router.get('/info/{originid}')
+async def read_info(originid: str, db: Session = Depends(get_db)):
+    originid = base64.b64decode(originid).decode('utf-8')
+    db_result = crud.read_ria_parameters(originid)
+    return db_result
+
+
 @router.get('/region/{originid}')
 async def read_region_name(originid: str, db: Session = Depends(get_db)):
     originid = base64.b64decode(originid).decode('utf-8')
