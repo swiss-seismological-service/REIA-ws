@@ -130,17 +130,12 @@ class RiskAssessmentSchema(BaseModel):
 
     event_text: Optional[str]
 
-    description_de: str | None = None
-    description_fr: str | None = None
-    description_it: str | None = None
-    description_en: str | None = None
-
     depth_value: Optional[float]
     time_value: datetime | None
     magnitude_value: Optional[str]
     latitude_value: Optional[float]
     longitude_value: Optional[float]
-    dangerlevel_value: Optional[int]
+    evaluationmode: Optional[str]
 
     creationinfo: CreationInfo
     preferred: bool
@@ -148,6 +143,17 @@ class RiskAssessmentSchema(BaseModel):
 
     class Config:
         getter_dict = ValueGetter
+
+
+class RiskAssessmentDescriptionSchema(BaseModel):
+    description_de: str | None = None
+    description_fr: str | None = None
+    description_it: str | None = None
+    description_en: str | None = None
+
+
+class DangerLevelSchema(BaseModel):
+    dangerlevel: Optional[int]
 
 
 class RiskValueSchema(BaseModel):

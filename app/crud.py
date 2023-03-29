@@ -351,54 +351,26 @@ def read_mean_losses(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
-def read_region_name(originids: tuple[str]) -> str:
-    from config.config import get_settings
-    settings = get_settings()
-    conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
+# def read_region_name(originids: tuple[str]) -> str:
+#     from config.config import get_settings
+#     settings = get_settings()
+#     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
 
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "select originreference.m_originid, "
-        "eventdescription.m_text as region_name "
-        "from eventdescription "
-        "inner join event on eventdescription._parent_oid = event._oid "
-        "inner join originreference on "
-        "originreference._parent_oid = event._oid "
-        "where eventdescription.m_type = 'region name' "
-        "and originreference.m_originid in  ({});".format(
-            ','.join(['%s'] * len(originids))), originids)
-    db_earthquakes = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [{k: v for k, v in d.items()} for d in db_earthquakes]
-
-
-def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
-
-    from config.config import get_settings
-    settings = get_settings()
-    conn = psycopg2.connect(settings.SCENARIO_INFO)
-
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT"
-                   " origin_publicid,"
-                   " event_text,"
-                   " description_de,"
-                   " description_en,"
-                   " description_fr,"
-                   " description_it,"
-                   " magnitude_value,"
-                   " time_value,"
-                   " depth_value,"
-                   " latitude_value, longitude_value"
-                   " FROM public.sm_origin"
-                   " WHERE origin_publicid IN ({});".format(
-                       ','.join(['%s'] * len(originids))), originids)
-
-    db_earthquakes = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [{k: v for k, v in d.items()} for d in db_earthquakes]
+#     cursor = conn.cursor(cursor_factory=RealDictCursor)
+#     cursor.execute(
+#         "select originreference.m_originid, "
+#         "eventdescription.m_text as region_name "
+#         "from eventdescription "
+#         "inner join event on eventdescription._parent_oid = event._oid "
+#         "inner join originreference on "
+#         "originreference._parent_oid = event._oid "
+#         "where eventdescription.m_type = 'region name' "
+#         "and originreference.m_originid in  ({});".format(
+#             ','.join(['%s'] * len(originids))), originids)
+#     db_earthquakes = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+#     return [{k: v for k, v in d.items()} for d in db_earthquakes]
 
 
 def read_danger_level(originid: str) -> int:
@@ -437,7 +409,8 @@ def read_danger_level(originid: str) -> int:
         return None
 
 
-def read_earthquake_information(originid: str) -> dict:
+def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
+
     from config.config import get_settings
     settings = get_settings()
     conn = psycopg2.connect(settings.SCENARIO_INFO)
@@ -455,15 +428,83 @@ def read_earthquake_information(originid: str) -> dict:
                    " depth_value,"
                    " latitude_value, longitude_value"
                    " FROM public.sm_origin"
-                   f" WHERE origin_publicid = '{originid}';")
+                   " WHERE origin_publicid IN ({});".format(
+                       ','.join(['%s'] * len(originids))), originids)
 
-    db_earthquake = cursor.fetchone() or {}
+    db_earthquakes = cursor.fetchall()
     cursor.close()
     conn.close()
-    return {k: v for k, v in db_earthquake.items()}
+    return [{k: v for k, v in d.items()} for d in db_earthquakes]
 
 
-def read_ria_parameters(originid: str) -> dict:
+# def read_ria_parameters(originids: tuple[str]) -> dict:
+#     from config.config import get_settings
+#     settings = get_settings()
+#     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
+
+#     cursor = conn.cursor(cursor_factory=RealDictCursor)
+#     cursor.execute(
+#         "select  "
+#         "    ((origin.m_time_value at time zone 'UTC') at time zone "
+#         "    'Europe/Zurich')::time as lokalzeit, "
+#         "    ((origin.m_time_value at time zone 'UTC') at time zone "
+#         "    'Europe/Zurich')::date as datum, "
+#         "    ((round(origin.m_depth_value::numeric,1))::character "
+#         "    varying) as herdtiefe,  "
+#         "    round(magnitude.m_magnitude_value::numeric, 1) as magnitude, "
+#         "    origin.m_evaluationmode as auswertung, "
+#         "    eventdescription.m_text as region, "
+#         "    (round((600072.37+(211455.93*(((origin.m_longitude_value*3600)-"
+#         "    26782.5)/10000))-(10938.51*(((origin.m_longitude_value*3600)-"
+#         "    26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/"
+#         "    10000))-(0.36*(((origin.m_longitude_value*3600)-26782.5)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))-(44.54*"
+#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
+#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
+#         "    (((origin.m_longitude_value*3600)-26782.5)/10000"
+#         "    )))::numeric))::character varying || ' / '  || (round(("
+#         "    200147.07+(308807.95*(((origin.m_latitude_value*3600)-169028.66)"
+#         "    /10000))+(3745.25*(((origin.m_longitude_value*3600)-26782.5)/"
+#         "    10000)*(((origin.m_longitude_value*3600)-26782.5)/10000))+"
+#         "    (76.63*(((origin.m_latitude_value*3600)-169028.66)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))-(194.56*"
+#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
+#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))+(119.79*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
+#         "    (((origin.m_latitude_value*3600)-169028.66)/10000"
+#         "    )))::numeric))::character varying as koordinaten, "
+#         "    '<a target=\"_blank\" href=\"http://edita.ethz.ch/de/earthquakes/switzerland/eventpage.html?originId=''' "
+#         "                || encode(event.m_preferredoriginid::bytea, 'base64'::text) || '''&date_ch='  "
+#         "                           || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date "
+#         "                           || '&time_ch=' || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time "
+#         "                           || '&region=' || eventdescription.m_text "
+#         "                           || '&magnitude=' || round(prefmagnitude.m_magnitude_value::numeric,1) "
+#         "      || '\">Link</a>' as ereignisdaten  "
+#         "from event "
+#         "inner join originreference on "
+#         "    originreference._parent_oid = event._oid "
+#         "inner join origin on "
+#         "    originreference.m_originid = origin.m_publicid "
+#         "inner join magnitude as prefmagnitude on "
+#         "    event.m_preferredmagnitudeid = prefmagnitude.m_publicid "
+#         "left join magnitude on "
+#         "    magnitude._parent_oid = origin._oid and "
+#         "    magnitude.m_type = 'MLhc'"
+#         "left join eventdescription on "
+#         "    eventdescription._parent_oid = event._oid and "
+#         "    eventdescription.m_type = 'region name' "
+#         "where origin.m_publicid in ({})".format(
+#             ','.join(['%s'] * len(originids))), originids)
+#     db_earthquakes = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+#     return [{k: v for k, v in d.items()} for d in db_earthquakes]
+
+
+def read_ria_parameters(originids: tuple[str]) -> dict:
     from config.config import get_settings
     settings = get_settings()
     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
@@ -471,65 +512,28 @@ def read_ria_parameters(originid: str) -> dict:
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         "select  "
-        "    ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time as lokalzeit, "
-        "    ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date as datum, "
-        "            ((round(origin.m_depth_value::numeric,1))::character varying) as herdtiefe,  "
-        "            round(magnitude.m_magnitude_value::numeric, 1) as magnitude, "
-        "            origin.m_evaluationmode as auswertung,  "
-        "            eventdescription.m_text as region, "
-        "    (round((600072.37+(211455.93*(((origin.m_longitude_value*3600)-26782.5)/10000))-(10938.51*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(0.36*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(44.54*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)))::numeric))::character varying || ' / '  || (round((200147.07+(308807.95*(((origin.m_latitude_value*3600)-169028.66)/10000))+(3745.25*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000))+(76.63*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(194.56*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))+(119.79*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)))::numeric))::character varying as koordinaten, "
-        "    '<a target=\"_blank\" href=\"http://edita.ethz.ch/de/earthquakes/switzerland/eventpage.html?originId=''' "
-        "                || encode(event.m_preferredoriginid::bytea, 'base64'::text) || '''&date_ch='  "
-        "                           || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date "
-        "                           || '&time_ch=' || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time "
-        "                           || '&region=' || eventdescription.m_text "
-        "                           || '&magnitude=' || round(prefmagnitude.m_magnitude_value::numeric,1) "
-        "      || '\">Link</a>' as ereignisdaten  "
-        "from event  "
-        "inner join originreference on originreference._parent_oid = event._oid "
-        "    inner join origin on originreference.m_originid = origin.m_publicid "
-        "    inner join magnitude as prefmagnitude on event.m_preferredmagnitudeid = prefmagnitude.m_publicid "
-        "left join magnitude on magnitude._parent_oid = origin._oid and magnitude.m_type = 'MLhc' "
-        "    left join eventdescription on eventdescription._parent_oid = event._oid and eventdescription.m_type = 'region name' "
-        "where "
-        "    origin.m_publicid = '{0}' -- 'smi:ch.ethz.sed/sc20ag/Origin/NLL.20230317174705.615095.235440' --originid hier einfügen "
-        .format(originid))
-    db_earthquake = cursor.fetchone() or {}
-    cursor.close()
-    conn.close()
-    return {k: v for k, v in db_earthquake.items()}
-
-
-def read_rias_parameters(originids: tuple[str]) -> dict:
-    from config.config import get_settings
-    settings = get_settings()
-    conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
-
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "select  "
-        "    ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time as lokalzeit, "
-        "    ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date as datum, "
-        "            ((round(origin.m_depth_value::numeric,1))::character varying) as herdtiefe,  "
-        "            round(magnitude.m_magnitude_value::numeric, 1) as magnitude, "
-        "            origin.m_evaluationmode as auswertung,  "
-        "            eventdescription.m_text as region, "
-        "    (round((600072.37+(211455.93*(((origin.m_longitude_value*3600)-26782.5)/10000))-(10938.51*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(0.36*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(44.54*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)))::numeric))::character varying || ' / '  || (round((200147.07+(308807.95*(((origin.m_latitude_value*3600)-169028.66)/10000))+(3745.25*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000))+(76.63*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))-(194.56*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_longitude_value*3600)-26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000))+(119.79*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)*(((origin.m_latitude_value*3600)-169028.66)/10000)))::numeric))::character varying as koordinaten, "
-        "    '<a target=\"_blank\" href=\"http://edita.ethz.ch/de/earthquakes/switzerland/eventpage.html?originId=''' "
-        "                || encode(event.m_preferredoriginid::bytea, 'base64'::text) || '''&date_ch='  "
-        "                           || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date "
-        "                           || '&time_ch=' || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time "
-        "                           || '&region=' || eventdescription.m_text "
-        "                           || '&magnitude=' || round(prefmagnitude.m_magnitude_value::numeric,1) "
-        "      || '\">Link</a>' as ereignisdaten  "
-        "from event  "
-        "inner join originreference on originreference._parent_oid = event._oid "
-        "    inner join origin on originreference.m_originid = origin.m_publicid "
-        "    inner join magnitude as prefmagnitude on event.m_preferredmagnitudeid = prefmagnitude.m_publicid "
-        "left join magnitude on magnitude._parent_oid = origin._oid and magnitude.m_type = 'MLhc' "
-        "    left join eventdescription on eventdescription._parent_oid = event._oid and eventdescription.m_type = 'region name' "
-        "where "
-        "   origin.m_publicid in ({})".format(
+        "    (origin.m_time_value at time zone 'UTC') "
+        "    at time zone 'Europe/Zurich' as time_value, "
+        "    origin.m_depth_value as depth_value,  "
+        "    magnitude.m_magnitude_value as magnitude_value, "
+        "    origin.m_evaluationmode as evaluationmode, "
+        "    eventdescription.m_text as region, "
+        "    origin.m_latitude_value as latitude_value, "
+        "    origin.m_longitude_value as longitude_value "
+        "from event "
+        "inner join originreference on "
+        "    originreference._parent_oid = event._oid "
+        "inner join origin on "
+        "    originreference.m_originid = origin.m_publicid "
+        "inner join magnitude as prefmagnitude on "
+        "    event.m_preferredmagnitudeid = prefmagnitude.m_publicid "
+        "left join magnitude on "
+        "    magnitude._parent_oid = origin._oid and "
+        "    magnitude.m_type = 'MLhc'"
+        "left join eventdescription on "
+        "    eventdescription._parent_oid = event._oid and "
+        "    eventdescription.m_type = 'region name' "
+        "where origin.m_publicid in ({})".format(
             ','.join(['%s'] * len(originids))), originids)
     db_earthquakes = cursor.fetchall()
     cursor.close()
@@ -546,28 +550,38 @@ def read_ria_text(originid: str, language: str) -> dict:
     cursor.execute(
         "select ria_text from ( "
         "    select * from ( "
-        "        select convert_from(m_data,'UTF8') as ria_text, 1 as prio, m_producttype, m_language "
+        "        select convert_from(m_data,'UTF8') as ria_text, "
+        "        1 as prio, m_producttype, m_language "
         "        from product  "
         "        where m_referredpublicobject = '{0}' "
         "        order by product._oid desc "
         "    ) as ria_text_for_this_originid "
         "    UNION "
         "    select * from ( "
-        "        select convert_from(m_data,'UTF8'), 2 as prio, m_producttype, m_language "
-        "        from product inner join originreference as referredoriginreference  "
-        "            on m_referredpublicobject = referredoriginreference.m_originid "
-        "        inner join event on referredoriginreference._parent_oid = event._oid "
+        "        select convert_from(m_data,'UTF8'), 2 as prio, "
+        "        m_producttype, m_language "
+        "        from product inner join originreference as "
+        "        referredoriginreference "
+        "            on m_referredpublicobject = "
+        "            referredoriginreference.m_originid "
+        "        inner join event on "
+        "        referredoriginreference._parent_oid = event._oid "
         "        where event.m_preferredoriginid = '{0}' "
         "        order by product._oid desc "
         "    ) as ria_text_for_preferred_originid "
         "    union  "
         "    select * from ( "
-        "        select convert_from(m_data,'UTF8'), 3 as prio, m_producttype, m_language "
-        "        from product inner join originreference as referredoriginreference  "
-        "            on m_referredpublicobject = referredoriginreference.m_originid "
+        "        select convert_from(m_data,'UTF8'), 3 as prio, "
+        "        m_producttype, m_language "
+        "        from product inner join originreference as "
+        "        referredoriginreference "
+        "            on m_referredpublicobject = "
+        "            referredoriginreference.m_originid "
         "        inner join originreference as otheroriginreference  "
-        "            on referredoriginreference._oid <> otheroriginreference._oid "
-        "                    and referredoriginreference._parent_oid = otheroriginreference._parent_oid "
+        "            on referredoriginreference._oid <> "
+        "            otheroriginreference._oid "
+        "                and referredoriginreference._parent_oid = "
+        "                otheroriginreference._parent_oid "
         "        where otheroriginreference.m_originid = '{0}' "
         "        order by product._oid desc "
         "    ) as latest_ria_text_for_any_originid "

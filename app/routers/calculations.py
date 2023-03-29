@@ -22,8 +22,11 @@ async def read_danger_level(originid: str, db: Session = Depends(get_db)):
 @router.get('/info/{originid}')
 async def read_info(originid: str, db: Session = Depends(get_db)):
     originid = base64.b64decode(originid).decode('utf-8')
-    db_result = crud.read_ria_parameters(originid)
-    return db_result
+    db_result = crud.read_ria_parameters((originid,))
+    if not db_result:
+        raise HTTPException(
+            status_code=404, detail='No info found for originid.')
+    return db_result[0]
 
 
 @router.get('/region/{originid}')
