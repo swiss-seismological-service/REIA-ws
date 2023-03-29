@@ -128,15 +128,6 @@ class RiskAssessmentSchema(BaseModel):
     losscalculation: CalculationSchema | None
     damagecalculation: CalculationSchema | None
 
-    event_text: Optional[str]
-
-    depth_value: Optional[float]
-    time_value: datetime | None
-    magnitude_value: Optional[str]
-    latitude_value: Optional[float]
-    longitude_value: Optional[float]
-    evaluationmode: Optional[str]
-
     creationinfo: CreationInfo
     preferred: bool
     published: bool
@@ -145,15 +136,19 @@ class RiskAssessmentSchema(BaseModel):
         getter_dict = ValueGetter
 
 
+class RiskAssessmentInfoSchema(RiskAssessmentSchema):
+    event_text: str | None
+    depth_value: float | None
+    time_value: datetime | None
+    magnitude_value: str | None
+    latitude_value: float | None
+    longitude_value: float | None
+    evaluationmode: str | None
+    dangerlevel: int | None
+
+
 class RiskAssessmentDescriptionSchema(BaseModel):
-    description_de: str | None = None
-    description_fr: str | None = None
-    description_it: str | None = None
-    description_en: str | None = None
-
-
-class DangerLevelSchema(BaseModel):
-    dangerlevel: Optional[int]
+    description: str | None = None
 
 
 class RiskValueSchema(BaseModel):

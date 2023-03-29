@@ -280,7 +280,8 @@ def read_aggregated_damage(db: Session,
 
 
 def read_risk_assessments(
-    db: Session, originid: str | None,
+        db: Session,
+        originid: str | None,
         starttime: datetime | None = None,
         endtime: datetime | None = None,
         published: bool | None = None,
@@ -351,62 +352,34 @@ def read_mean_losses(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
-# def read_region_name(originids: tuple[str]) -> str:
-#     from config.config import get_settings
-#     settings = get_settings()
-#     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
-
-#     cursor = conn.cursor(cursor_factory=RealDictCursor)
-#     cursor.execute(
-#         "select originreference.m_originid, "
-#         "eventdescription.m_text as region_name "
-#         "from eventdescription "
-#         "inner join event on eventdescription._parent_oid = event._oid "
-#         "inner join originreference on "
-#         "originreference._parent_oid = event._oid "
-#         "where eventdescription.m_type = 'region name' "
-#         "and originreference.m_originid in  ({});".format(
-#             ','.join(['%s'] * len(originids))), originids)
-#     db_earthquakes = cursor.fetchall()
-#     cursor.close()
-#     conn.close()
-#     return [{k: v for k, v in d.items()} for d in db_earthquakes]
-
-
-def read_danger_level(originid: str) -> int:
+def read_danger_levels(originids: tuple[str]) -> dict:
     from config.config import get_settings
     settings = get_settings()
     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
-        "select ("
-        "xpath("
-        "'//mydefns:alert/mydefns:info/mydefns:parameter/mydefns:value/text()'"
-        ", encode(m_data, 'escape')::xml, ARRAY[ARRAY['mydefns', "
-        "'urn:oasis:names:tc:emergency:cap:1.2']] ) )[1] as alarmlevel"
-        "    from product"
-        "    where m_producttype = 'cap-with-zones-text-message' "
-        "        and m_referredpublicobject in "
-        "            (select anyorigin.m_originid "
-        "            from event inner join originreference as anyorigin "
-        "                on anyorigin._parent_oid = event._oid"
-        "                inner join originreference as myorigin "
-        "                on myorigin._parent_oid = event._oid"
-        "                    where anyorigin.m_originid = "
-        "                    product.m_referredpublicobject "
-        "                        and myorigin.m_originid = '{}'"
-        "             order by product._oid desc limit 1)"
-        "        order by product._oid desc limit 1".format(originid)
-    )
+        "select "
+        "    (xpath('//mydefns:alert/mydefns:info/"
+        "    mydefns:parameter/mydefns:value/text()' "
+        "    , encode(product.m_data, 'escape')::xml, ARRAY[ARRAY['mydefns', "
+        "    'urn:oasis:names:tc:emergency:cap:1.2']] ) )[1] as alarmlevel, "
+        "    myorigin.m_originid as origin_publicid "
+        "from event "
+        "inner join originreference as anyorigin "
+        "    on anyorigin._parent_oid = event._oid "
+        "inner join originreference as myorigin "
+        "    on myorigin._parent_oid = event._oid "
+        "inner join product on "
+        "    product.m_referredpublicobject = anyorigin.m_originid "
+        "where myorigin.m_originid in ({}) "
+        "    and product.m_producttype = 'cap-with-zones-text-message'"
+        .format(','.join(['%s'] * len(originids))), originids)
 
-    danger_level = cursor.fetchone()
+    db_earthquakes = cursor.fetchall()
     cursor.close()
     conn.close()
-    if danger_level and 'alarmlevel' in danger_level:
-        return int(danger_level['alarmlevel'])
-    else:
-        return None
+    return [{k: v for k, v in d.items()} for d in db_earthquakes]
 
 
 def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
@@ -435,73 +408,6 @@ def read_earthquakes_information(originids: tuple[str]) -> list[dict]:
     cursor.close()
     conn.close()
     return [{k: v for k, v in d.items()} for d in db_earthquakes]
-
-
-# def read_ria_parameters(originids: tuple[str]) -> dict:
-#     from config.config import get_settings
-#     settings = get_settings()
-#     conn = psycopg2.connect(settings.EARTHQUAKE_INFO)
-
-#     cursor = conn.cursor(cursor_factory=RealDictCursor)
-#     cursor.execute(
-#         "select  "
-#         "    ((origin.m_time_value at time zone 'UTC') at time zone "
-#         "    'Europe/Zurich')::time as lokalzeit, "
-#         "    ((origin.m_time_value at time zone 'UTC') at time zone "
-#         "    'Europe/Zurich')::date as datum, "
-#         "    ((round(origin.m_depth_value::numeric,1))::character "
-#         "    varying) as herdtiefe,  "
-#         "    round(magnitude.m_magnitude_value::numeric, 1) as magnitude, "
-#         "    origin.m_evaluationmode as auswertung, "
-#         "    eventdescription.m_text as region, "
-#         "    (round((600072.37+(211455.93*(((origin.m_longitude_value*3600)-"
-#         "    26782.5)/10000))-(10938.51*(((origin.m_longitude_value*3600)-"
-#         "    26782.5)/10000)*(((origin.m_latitude_value*3600)-169028.66)/"
-#         "    10000))-(0.36*(((origin.m_longitude_value*3600)-26782.5)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))-(44.54*"
-#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
-#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
-#         "    (((origin.m_longitude_value*3600)-26782.5)/10000"
-#         "    )))::numeric))::character varying || ' / '  || (round(("
-#         "    200147.07+(308807.95*(((origin.m_latitude_value*3600)-169028.66)"
-#         "    /10000))+(3745.25*(((origin.m_longitude_value*3600)-26782.5)/"
-#         "    10000)*(((origin.m_longitude_value*3600)-26782.5)/10000))+"
-#         "    (76.63*(((origin.m_latitude_value*3600)-169028.66)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))-(194.56*"
-#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
-#         "    (((origin.m_longitude_value*3600)-26782.5)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000))+(119.79*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000)*"
-#         "    (((origin.m_latitude_value*3600)-169028.66)/10000"
-#         "    )))::numeric))::character varying as koordinaten, "
-#         "    '<a target=\"_blank\" href=\"http://edita.ethz.ch/de/earthquakes/switzerland/eventpage.html?originId=''' "
-#         "                || encode(event.m_preferredoriginid::bytea, 'base64'::text) || '''&date_ch='  "
-#         "                           || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::date "
-#         "                           || '&time_ch=' || ((origin.m_time_value at time zone 'UTC') at time zone 'Europe/Zurich')::time "
-#         "                           || '&region=' || eventdescription.m_text "
-#         "                           || '&magnitude=' || round(prefmagnitude.m_magnitude_value::numeric,1) "
-#         "      || '\">Link</a>' as ereignisdaten  "
-#         "from event "
-#         "inner join originreference on "
-#         "    originreference._parent_oid = event._oid "
-#         "inner join origin on "
-#         "    originreference.m_originid = origin.m_publicid "
-#         "inner join magnitude as prefmagnitude on "
-#         "    event.m_preferredmagnitudeid = prefmagnitude.m_publicid "
-#         "left join magnitude on "
-#         "    magnitude._parent_oid = origin._oid and "
-#         "    magnitude.m_type = 'MLhc'"
-#         "left join eventdescription on "
-#         "    eventdescription._parent_oid = event._oid and "
-#         "    eventdescription.m_type = 'region name' "
-#         "where origin.m_publicid in ({})".format(
-#             ','.join(['%s'] * len(originids))), originids)
-#     db_earthquakes = cursor.fetchall()
-#     cursor.close()
-#     conn.close()
-#     return [{k: v for k, v in d.items()} for d in db_earthquakes]
 
 
 def read_ria_parameters(originids: tuple[str]) -> dict:
