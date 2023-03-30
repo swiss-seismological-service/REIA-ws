@@ -106,14 +106,8 @@ def download_csv(url, filename, category):
     csv = pd.read_csv(url)
     csv = csv.drop('losscategory', axis=1)
 
-    if category in [v['building-costs'] for k, v in KATEGORIEN.items()]:
-        csv = csv.rename(
-            columns={'mean': 'mean [M CHF]',
-                     'quantile10': 'percentile10 [M CHF]',
-                     'quantile90': 'percentile90 [M CHF]'})
-    else:
-        csv = csv.rename(columns={'quantile10': 'percentile10',
-                                  'quantile90': 'percentile90'})
+    csv = csv.rename(columns={'quantile10': 'percentile10',
+                              'quantile90': 'percentile90'})
 
     csv.to_csv(filename, index=False)
 
@@ -264,4 +258,5 @@ def download(oid=None, lngs=LANGUAGES):
 
 if __name__ == '__main__':
     download(
-        oid="smi:ch.ethz.sed/scenario/Origin/Porrentruy_M4_0", lngs=['de', 'fr'])
+        oid="smi:ch.ethz.sed/scenario/Origin/Porrentruy_M4_0",
+        lngs=['de', 'fr'])
