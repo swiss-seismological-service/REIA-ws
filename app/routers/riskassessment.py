@@ -8,7 +8,7 @@ from app import crud
 from app.dependencies import get_db
 from app.schemas import RiskAssessmentSchema
 
-router = APIRouter(prefix='/riskassessment/info', tags=['riskassessments'])
+router = APIRouter(prefix='/riskassessment', tags=['riskassessments'])
 
 
 @router.get('', response_model=list[RiskAssessmentSchema],
@@ -90,15 +90,6 @@ async def read_info(originid: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=404, detail='No info found for originid.')
     return db_result[0]
-
-
-@router.get('/{originid}/region')
-async def read_region_name(originid: str, db: Session = Depends(get_db)):
-    originid = base64.b64decode(originid).decode('utf-8')
-    db_result = crud.read_region_name([originid])
-    if db_result:
-        return {'region_name': db_result[0]['region_name']}
-    return {'region_name': None}
 
 
 @router.get('/{originid}/description/{lang}')
