@@ -26,7 +26,7 @@ def calculate_statistics(data: pd.DataFrame, aggregation_type: str):
         aggregation_type)['weighted'].sum()})
 
     # calculate quantiles
-    statistics['quantile10'], statistics['quantile90'] = \
+    statistics['percentile10'], statistics['percentile90'] = \
         zip(*data.groupby(aggregation_type).apply(
             lambda x: weighted_quantile(
                 x[value_column], (0.1, 0.9), x['weight'])))

@@ -42,8 +42,11 @@ async def read_description(originid: str,
     """
     language_mapping = {"de": "german", "en": "english",
                         "fr": "french", "it": "italian"}
+
     originid = base64.b64decode(originid).decode('utf-8')
     db_result = crud.read_ria_text(originid, language_mapping[lang])
+
     if db_result:
         return {'description': db_result['ria_text']}
+
     return {'description': None}

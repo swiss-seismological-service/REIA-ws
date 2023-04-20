@@ -1,6 +1,6 @@
 # import enum
 from datetime import datetime
-from typing import Any, List, Optional, Type
+from typing import Any, Optional, Type
 
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
@@ -9,25 +9,6 @@ from sqlalchemy.inspection import inspect
 
 BaseConfig.arbitrary_types_allowed = True
 BaseConfig.orm_mode = True
-
-
-def real_value_factory(quantity_type: type) -> Type[BaseModel]:
-    _func_map = dict([
-        ('value', (Optional[quantity_type], None)),
-        ('uncertainty', (Optional[float], None)),
-        ('loweruncertainty', (Optional[float], None)),
-        ('upperuncertainty', (Optional[float], None)),
-        ('confidencelevel', (Optional[float], None)),
-        ('pdfvariable', (Optional[List[float]], None)),
-        ('pdfprobability', (Optional[List[float]], None)),
-        ('pdfbinedges', (Optional[List[float]], None))
-    ])
-
-    retval = create_model(
-        f'Real{quantity_type.__name__}',
-        __config__=BaseConfig,
-        **_func_map)
-    return retval
 
 
 class ValueGetter(GetterDict):
@@ -53,10 +34,6 @@ class ValueGetter(GetterDict):
             return return_dict
         else:
             return default
-
-
-class RealFloatValue(real_value_factory(float)):
-    pass
 
 
 def creationinfo_factory() -> Type[BaseModel]:
@@ -151,41 +128,10 @@ class RiskAssessmentDescriptionSchema(BaseModel):
     description: str | None = None
 
 
-class RiskValueSchema(BaseModel):
-    eventid: int
-    losscategory: ELossCategory
-    weight: float
-
-    aggregationtags: list[AggregationTagSchema]
-
-    _calculation_oid: int
-    _type: str
-
-
-class LossValueSchema(RiskValueSchema):
-    loss: Optional[RealFloatValue]
-    _losscalculationbranch_oid = Optional[int]
-
-    class Config:
-        getter_dict = ValueGetter
-
-
-class DamageValueSchema(RiskValueSchema):
-    dg1: Optional[RealFloatValue]
-    dg2: Optional[RealFloatValue]
-    dg3: Optional[RealFloatValue]
-    dg4: Optional[RealFloatValue]
-    dg5: Optional[RealFloatValue]
-    _damageculationbranch_oid = Optional[int]
-
-    class Config:
-        getter_dict = ValueGetter
-
-
 class RiskValueStatisticsSchema(BaseModel):
     mean: float
-    quantile10: float
-    quantile90: float
+    percentile10: float
+    percentile90: float
     losscategory: ELossCategory
     tag: str
 

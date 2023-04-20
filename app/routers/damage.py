@@ -30,8 +30,8 @@ async def get_country_damage(calculation_id: int,
             raise HTTPException(status_code=404, detail="No damage found.")
         else:
             return DamageValueStatisticsSchema(mean=0,
-                                               quantile10=0,
-                                               quantile90=0,
+                                               percentile10=0,
+                                               percentile90=0,
                                                percentage=0,
                                                losscategory=damage_category,
                                                tag='CH')
