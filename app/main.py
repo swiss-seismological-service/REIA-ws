@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from reia.datamodel.base import ORMBase
 
 from app.database import engine
-from app.routers import calculation, damage, loss, riskassessment
+from app.routers import calculation, damage, loss, origin, riskassessment
 from config.config import get_settings
 
 ORMBase.metadata.create_all(bind=engine)
@@ -13,6 +13,7 @@ app.include_router(loss.router, prefix='/v1')
 app.include_router(damage.router, prefix='/v1')
 app.include_router(riskassessment.router, prefix='/v1')
 app.include_router(calculation.router, prefix='/v1')
+app.include_router(origin.router, prefix='/v1')
 
 
 origins = [
