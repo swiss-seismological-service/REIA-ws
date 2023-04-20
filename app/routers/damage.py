@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.dependencies import get_db
-from app.schemas import DamageValueStatisticsSchema
-from app.utils import calculate_statistics, csv_response
+from app.schemas import (DamageValueStatisticsExtendedSchema,
+                         DamageValueStatisticsSchema)
+from app.utils import (calculate_statistics, calculate_statistics_extended,
+                       csv_response)
 
 router = APIRouter(prefix='/damage', tags=['damage'])
 
@@ -101,4 +103,68 @@ async def get_damage(calculation_id: int,
         return csv_response(statistics, 'loss')
 
     return [DamageValueStatisticsSchema(**x)
+            for x in statistics.to_dict('records')]
+
+
+@router.get("/extended/{calculation_id}/{damage_category}/{aggregation_type}",
+            # response_model=list[DamageValueStatisticsExtendedSchema],
+            response_model_exclude_none=True)
+async def get_extended_damage(calculation_id: int,
+                              aggregation_type: str,
+                              damage_category: ELossCategory,
+                              aggregation_tag: str | None = None,
+                              format: str = 'json',
+                              db: Session = Depends(get_db)):
+    """
+    Returns a list of all realizations of loss for a calculation.
+    """
+
+    like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
+
+    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+
+    if tags.empty:
+        raise HTTPException(
+            status_code=404, detail="No aggregationtags found.")
+
+    db_result = crud.read_aggregated_damage_extended(
+        db, calculation_id,
+        aggregation_type,
+        damage_category,
+        filter_like_tag=like_tag)
+
+    db_buildings = crud.read_total_buildings(
+        db, calculation_id,
+        aggregation_type,
+        filter_like_tag=like_tag)
+
+    if db_result.empty or db_buildings.empty:
+        if not crud.read_calculation(db, calculation_id):
+            raise HTTPException(status_code=404, detail="No damage found.")
+
+    db_result = db_result.merge(
+        tags, how='outer', on=aggregation_type).fillna(0)
+
+    statistics = calculate_statistics_extended(db_result, aggregation_type)
+    statistics['losscategory'] = damage_category.value
+
+    percentages = pd.DataFrame()
+
+    for column in statistics.columns:
+        if column.endswith('mean'):
+            percentages[f'{column.split("_")[0]}_percent'] = \
+                statistics.set_index('tag')[column] / \
+                db_buildings.set_index(aggregation_type)['buildingcount'] * 100
+
+    statistics = statistics.merge(
+        percentages, how='outer', left_on='tag', right_index=True).fillna(0)
+
+    if format == 'csv':
+        return csv_response(statistics, 'loss')
+
+    print(statistics['dg1_pc10']+statistics['dg2_pc10'] +
+          statistics['dg3_pc10']+statistics['dg4_pc10']+statistics['dg5_pc10'])
+    print(statistics['dgsum_pc10'])
+
+    return [DamageValueStatisticsExtendedSchema(**x)
             for x in statistics.to_dict('records')]

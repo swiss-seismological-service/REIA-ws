@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.dependencies import get_db
+from app.schemas import (RiskAssessmentDescriptionSchema,
+                         RiskAssessmentInfoSchema)
 
 router = APIRouter(prefix='/origin', tags=['origin'])
 
@@ -17,7 +19,7 @@ async def read_danger_level(originid: str, db: Session = Depends(get_db)):
     return db_result
 
 
-@router.get('/{originid}')
+@router.get('/{originid}', response_model=RiskAssessmentInfoSchema)
 async def read_info(originid: str, db: Session = Depends(get_db)):
     originid = base64.b64decode(originid).decode('utf-8')
     db_result = crud.read_ria_parameters((originid,))
@@ -27,7 +29,8 @@ async def read_info(originid: str, db: Session = Depends(get_db)):
     return db_result[0]
 
 
-@router.get('/{originid}/description/{lang}')
+@router.get('/{originid}/description/{lang}',
+            response_model=RiskAssessmentDescriptionSchema,)
 async def read_description(originid: str,
                            lang: Literal['de', 'en', 'fr', 'it'],
                            db: Session = Depends(get_db)):

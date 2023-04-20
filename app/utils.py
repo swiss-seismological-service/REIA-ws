@@ -38,3 +38,38 @@ def calculate_statistics(data: pd.DataFrame, aggregation_type: str):
         'tag').reset_index()
 
     return statistics
+
+
+def calculate_statistics_extended(data: pd.DataFrame, aggregation_type: str):
+    # either loss_value or damage_value
+    value_column = [i for i in data.columns if 'value' in i]
+
+    statistics = pd.DataFrame()
+
+    # calculate weighted loss
+    for col in value_column:
+
+        base_name = col.split('_')[0]
+
+        data['weighted'] = data['weight'] * \
+            data[col]
+
+        # initialize with mean
+        # statistics = pd.DataFrame({f'{base_name}_mean': data.groupby(
+        #     aggregation_type)['weighted'].sum()})
+        statistics[f'{base_name}_mean'] = data.groupby(
+            aggregation_type)['weighted'].sum()
+
+        # calculate quantiles
+        statistics[f'{base_name}_pc10'], statistics[f'{base_name}_pc90'] = \
+            zip(*data.groupby(aggregation_type).apply(
+                lambda x: weighted_quantile(
+                    x[col], (0.1, 0.9), x['weight'])))
+
+        # drop intermediate column again form original df
+        data.drop(columns=['weighted'])
+
+    statistics = statistics.rename_axis(
+        'tag').reset_index()
+
+    return statistics

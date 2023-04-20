@@ -279,6 +279,81 @@ def read_aggregated_damage(db: Session,
     return pd.read_sql(stmt, db.get_bind())
 
 
+def read_aggregated_damage_extended(db: Session,
+                                    calculation_id: int,
+                                    aggregation_type: str,
+                                    loss_category: ELossCategory,
+                                    filter_tag: str | None = None,
+                                    filter_like_tag: str | None = None) \
+        -> pd.DataFrame:
+
+    damage_sub = select(
+        DamageValue.dg1_value,
+        DamageValue.dg2_value,
+        DamageValue.dg3_value,
+        DamageValue.dg4_value,
+        DamageValue.dg5_value,
+        DamageValue.weight,
+        DamageValue._calculation_oid,
+        DamageValue.losscategory,
+        DamageValue._oid,
+        DamageValue._type
+    ).where(and_(
+        DamageValue._calculation_oid == calculation_id,
+        DamageValue.losscategory == loss_category,
+        DamageValue._type == ECalculationType.DAMAGE
+    )).subquery()
+
+    agg_sub = select(
+        AggregationTag.name,
+        AggregationTag.type,
+        AggregationTag._oid
+    ).where(and_(
+            AggregationTag.type == aggregation_type,
+            AggregationTag.name.like(
+                filter_like_tag) if filter_like_tag else True,
+            (AggregationTag.name == filter_tag) if filter_tag else True
+            )).subquery()
+
+    stmt = select(damage_sub.c.dg1_value.label('dg1_value'),
+                  damage_sub.c.dg2_value.label('dg2_value'),
+                  damage_sub.c.dg3_value.label('dg3_value'),
+                  damage_sub.c.dg4_value.label('dg4_value'),
+                  damage_sub.c.dg5_value.label('dg5_value'),
+                  (damage_sub.c.dg2_value +
+                   damage_sub.c.dg3_value +
+                   damage_sub.c.dg4_value +
+                   damage_sub.c.dg5_value).label('dg25_value'),
+                  (damage_sub.c.dg1_value +
+                   damage_sub.c.dg2_value +
+                   damage_sub.c.dg3_value +
+                   damage_sub.c.dg4_value +
+                   damage_sub.c.dg5_value).label('dgsum_value'),
+                  damage_sub.c.weight,
+                  agg_sub.c.name.label(aggregation_type)) \
+        .select_from(damage_sub) \
+        .join(riskvalue_aggregationtag, and_(
+            riskvalue_aggregationtag.c.riskvalue == damage_sub.c._oid,
+            riskvalue_aggregationtag.c.losscategory ==
+            damage_sub.c.losscategory,
+            riskvalue_aggregationtag.c._calculation_oid ==
+            damage_sub.c._calculation_oid
+        )) \
+        .join(agg_sub, and_(
+            agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
+            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
+        )) \
+        .where(and_(
+            agg_sub.c.name.like(filter_like_tag) if filter_like_tag else True,
+            (AggregationTag.name == filter_tag) if filter_tag else True,
+            damage_sub.c.losscategory == loss_category,
+            damage_sub.c._calculation_oid == calculation_id,
+            damage_sub.c._type == ECalculationType.DAMAGE
+        ))
+
+    return pd.read_sql(stmt, db.get_bind())
+
+
 def read_risk_assessments(
         db: Session,
         originid: str | None,
@@ -419,13 +494,13 @@ def read_ria_parameters(originids: tuple[str]) -> dict:
     cursor.execute(
         "select  "
         "    (origin.m_time_value at time zone 'UTC') "
-        "    at time zone 'Europe/Zurich' as time_value, "
-        "    origin.m_depth_value as depth_value,  "
-        "    magnitude.m_magnitude_value as magnitude_value, "
+        "    at time zone 'Europe/Zurich' as time, "
+        "    origin.m_depth_value as depth,  "
+        "    magnitude.m_magnitude_value as magnitude, "
         "    origin.m_evaluationmode as evaluationmode, "
         "    eventdescription.m_text as region, "
-        "    origin.m_latitude_value as latitude_value, "
-        "    origin.m_longitude_value as longitude_value "
+        "    origin.m_latitude_value as latitude, "
+        "    origin.m_longitude_value as longitude "
         "from event "
         "inner join originreference on "
         "    originreference._parent_oid = event._oid "

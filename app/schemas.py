@@ -113,19 +113,18 @@ class RiskAssessmentSchema(BaseModel):
         getter_dict = ValueGetter
 
 
-class RiskAssessmentInfoSchema(RiskAssessmentSchema):
-    event_text: str | None
-    depth_value: float | None
-    time_value: datetime | None
-    magnitude_value: str | None
-    latitude_value: float | None
-    longitude_value: float | None
-    evaluationmode: str | None
-    dangerlevel: int | None
-
-
 class RiskAssessmentDescriptionSchema(BaseModel):
     description: str | None = None
+
+
+class RiskAssessmentInfoSchema(BaseModel):
+    time: datetime | None = None
+    depth: float | None = None
+    magnitude: float | None = None
+    evaluationmode: str | None = None
+    region: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class RiskValueStatisticsSchema(BaseModel):
@@ -138,3 +137,43 @@ class RiskValueStatisticsSchema(BaseModel):
 
 class DamageValueStatisticsSchema(RiskValueStatisticsSchema):
     percentage: float
+
+
+class DamageValueStatisticsExtendedSchema(BaseModel):
+    dg1_mean: float
+    dg1_pc10: float
+    dg1_pc90: float
+    dg1_percent: float
+
+    dg2_mean: float
+    dg2_pc10: float
+    dg2_pc90: float
+    dg2_percent: float
+
+    dg3_mean: float
+    dg3_pc10: float
+    dg3_pc90: float
+    dg3_percent: float
+
+    dg4_mean: float
+    dg4_pc10: float
+    dg4_pc90: float
+    dg4_percent: float
+
+    dg5_mean: float
+    dg5_pc10: float
+    dg5_pc90: float
+    dg5_percent: float
+
+    dgsum_mean: float
+    dgsum_pc10: float
+    dgsum_pc90: float
+    dgsum_percent: float
+
+    dg25_mean: float
+    dg25_pc10: float
+    dg25_pc90: float
+    dg25_percent: float
+
+    losscategory: ELossCategory
+    tag: str
