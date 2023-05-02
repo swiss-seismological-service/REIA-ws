@@ -320,15 +320,6 @@ def read_aggregated_damage_extended(db: Session,
                   damage_sub.c.dg3_value.label('dg3_value'),
                   damage_sub.c.dg4_value.label('dg4_value'),
                   damage_sub.c.dg5_value.label('dg5_value'),
-                  (damage_sub.c.dg2_value +
-                   damage_sub.c.dg3_value +
-                   damage_sub.c.dg4_value +
-                   damage_sub.c.dg5_value).label('dg25_value'),
-                  (damage_sub.c.dg1_value +
-                   damage_sub.c.dg2_value +
-                   damage_sub.c.dg3_value +
-                   damage_sub.c.dg4_value +
-                   damage_sub.c.dg5_value).label('dgsum_value'),
                   damage_sub.c.weight,
                   agg_sub.c.name.label(aggregation_type)) \
         .select_from(damage_sub) \

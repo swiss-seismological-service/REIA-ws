@@ -143,37 +143,24 @@ class DamageValueStatisticsExtendedSchema(BaseModel):
     dg1_mean: float
     dg1_pc10: float
     dg1_pc90: float
-    dg1_percent: float
 
     dg2_mean: float
     dg2_pc10: float
     dg2_pc90: float
-    dg2_percent: float
 
     dg3_mean: float
     dg3_pc10: float
     dg3_pc90: float
-    dg3_percent: float
 
     dg4_mean: float
     dg4_pc10: float
     dg4_pc90: float
-    dg4_percent: float
 
     dg5_mean: float
     dg5_pc10: float
     dg5_pc90: float
-    dg5_percent: float
 
-    dgsum_mean: float
-    dgsum_pc10: float
-    dgsum_pc90: float
-    dgsum_percent: float
-
-    dg25_mean: float
-    dg25_pc10: float
-    dg25_pc90: float
-    dg25_percent: float
+    buildings: float
 
     losscategory: ELossCategory
     tag: str

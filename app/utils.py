@@ -55,8 +55,6 @@ def calculate_statistics_extended(data: pd.DataFrame, aggregation_type: str):
             data[col]
 
         # initialize with mean
-        # statistics = pd.DataFrame({f'{base_name}_mean': data.groupby(
-        #     aggregation_type)['weighted'].sum()})
         statistics[f'{base_name}_mean'] = data.groupby(
             aggregation_type)['weighted'].sum()
 

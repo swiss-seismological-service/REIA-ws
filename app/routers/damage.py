@@ -148,23 +148,14 @@ async def get_extended_damage(calculation_id: int,
     statistics = calculate_statistics_extended(db_result, aggregation_type)
     statistics['losscategory'] = damage_category.value
 
-    percentages = pd.DataFrame()
-
-    for column in statistics.columns:
-        if column.endswith('mean'):
-            percentages[f'{column.split("_")[0]}_percent'] = \
-                statistics.set_index('tag')[column] / \
-                db_buildings.set_index(aggregation_type)['buildingcount'] * 100
-
     statistics = statistics.merge(
-        percentages, how='outer', left_on='tag', right_index=True).fillna(0)
+        db_buildings.rename(columns={'buildingcount': 'buildings'}),
+        how='outer',
+        left_on='tag',
+        right_on=aggregation_type).fillna(0)
 
     if format == 'csv':
-        return csv_response(statistics, 'loss')
-
-    print(statistics['dg1_pc10']+statistics['dg2_pc10'] +
-          statistics['dg3_pc10']+statistics['dg4_pc10']+statistics['dg5_pc10'])
-    print(statistics['dgsum_pc10'])
+        return csv_response(statistics, 'damage')
 
     return [DamageValueStatisticsExtendedSchema(**x)
             for x in statistics.to_dict('records')]
