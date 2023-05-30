@@ -119,7 +119,8 @@ def read_country_damage(db: Session, calculation_id, loss_category):
     return pd.read_sql(stmt, db.get_bind())
 
 
-def read_total_buildings_country(db: Session, calculation_id: int) -> int:
+def read_total_buildings_country(
+        db: Session, calculation_id: int) -> int | None:
     exp_sub = select(ExposureModel._oid) \
         .join(DamageCalculationBranch) \
         .join(Calculation) \

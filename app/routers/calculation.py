@@ -7,7 +7,7 @@ from app import crud
 from app.dependencies import get_db
 from app.schemas import DamageCalculationSchema, LossCalculationSchema
 
-router = APIRouter(prefix='/calculation', tags=['calculations', 'earthquakes'])
+router = APIRouter(prefix='/calculation', tags=['calculations'])
 
 
 @router.get('',
@@ -18,12 +18,10 @@ async def read_calculations(starttime: datetime | None = None,
                             endtime: datetime | None = None,
                             db: Session = Depends(get_db)):
     '''
-    Returns a list of Calculations.
+    Returns a list of calculations.
     '''
     db_result = crud.read_calculations(db, starttime, endtime)
-    if not db_result:
-        raise HTTPException(status_code=404, detail='No calculations found.')
-    return db_result
+    return db_result or []
 
 
 @router.get('/{oid}',
@@ -32,9 +30,11 @@ async def read_calculations(starttime: datetime | None = None,
 async def read_calculation(oid: int,
                            db: Session = Depends(get_db)):
     '''
-    Returns a the requested Calculation.
+    Returns the requested calculation.
     '''
     db_result = crud.read_calculation(db, oid)
+
     if not db_result:
         raise HTTPException(status_code=404, detail='No calculation found.')
+
     return db_result

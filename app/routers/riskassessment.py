@@ -20,7 +20,7 @@ async def read_risk_assessments(originid: str | None = None,
                                 preferred: bool | None = None,
                                 db: Session = Depends(get_db)):
     '''
-    Returns a list of Earthquakes
+    Returns a list of RiskAssessments.
     '''
     if originid:
         originid = base64.b64decode(originid).decode('utf-8')
@@ -34,7 +34,7 @@ async def read_risk_assessments(originid: str | None = None,
     result = []
 
     shakemap_db_infos = crud.read_earthquakes_information(
-        tuple(e.originid for e in db_result))
+        tuple(str(e.originid) for e in db_result))
 
     for ra in db_result:
         info = next((i for i in shakemap_db_infos if
@@ -56,7 +56,7 @@ async def read_risk_assessments(originid: str | None = None,
             response_model_exclude_none=True)
 async def read_risk_assessment(oid: int, db: Session = Depends(get_db)):
     '''
-    Returns the requested earthquake
+    Returns the requested RiskAssessment.
     '''
     db_result = crud.read_risk_assessment(db, oid)
 
@@ -64,7 +64,7 @@ async def read_risk_assessment(oid: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail='No earthquakes found.')
 
     shakemap_db_infos = crud.read_earthquakes_information(
-        (db_result.originid,))
+        (str(db_result.originid),))
 
     if len(shakemap_db_infos) > 0:
         for k, v in shakemap_db_infos[0].items():

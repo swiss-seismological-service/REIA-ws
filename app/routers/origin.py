@@ -14,6 +14,9 @@ router = APIRouter(prefix='/origin', tags=['origin'])
 
 @router.get('/{originid}/dangerlevel')
 async def read_danger_level(originid: str, db: Session = Depends(get_db)):
+    """
+    Returns the danger level for the given originid.
+    """
     originid = base64.b64decode(originid).decode('utf-8')
     db_result = crud.read_danger_levels((originid,))
     return db_result
@@ -36,12 +39,6 @@ async def read_description(originid: str,
                            db: Session = Depends(get_db)):
     """
     Returns the description of the event for the given originid and language.
-
-    :param originid: The b64 encoded originid of the event
-
-    :param lang: The language of the description
-
-    :return: The description of the event
     """
     language_mapping = {"de": "german", "en": "english",
                         "fr": "french", "it": "italian"}

@@ -18,7 +18,7 @@ async def get_country_losses(calculation_id: int,
                              format: str = 'json',
                              db: Session = Depends(get_db)):
     """
-    Returns a list of all realizations of loss for a calculation.
+    Returns a list of the loss for a specific category for the country.
     """
 
     db_result = crud.read_country_loss(db, calculation_id, loss_category)
@@ -42,7 +42,7 @@ async def get_country_losses(calculation_id: int,
     if format == 'csv':
         return csv_response(statistics, 'loss')
 
-    return [RiskValueStatisticsSchema(**x)
+    return [RiskValueStatisticsSchema.parse_obj(x)
             for x in statistics.to_dict('records')][0]
 
 
@@ -56,7 +56,8 @@ async def get_losses(calculation_id: int,
                      format: str = 'json',
                      db: Session = Depends(get_db)):
     """
-    Returns a list of all realizations of loss for a calculation.
+    Returns a list of the loss for a specific category and aggregated
+    by a specific aggregation type.
     """
     like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
 
@@ -87,5 +88,5 @@ async def get_losses(calculation_id: int,
     if format == 'csv':
         return csv_response(statistics, 'loss')
 
-    return [RiskValueStatisticsSchema(**x)
+    return [RiskValueStatisticsSchema.parse_obj(x)
             for x in statistics.to_dict('records')]
