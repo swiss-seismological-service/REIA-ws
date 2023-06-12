@@ -135,8 +135,8 @@ class RiskValueStatisticsSchema(BaseModel):
     tag: str
 
 
-# class DamageValueStatisticsSchema(RiskValueStatisticsSchema):
-#     percentage: float
+class DamageValueStatisticsReportSchema(RiskValueStatisticsSchema):
+    percentage: float
 
 
 class DamageValueStatisticsSchema(BaseModel):
