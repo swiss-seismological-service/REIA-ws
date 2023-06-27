@@ -127,19 +127,25 @@ class RiskAssessmentInfoSchema(BaseModel):
     longitude: float | None = None
 
 
-class RiskValueStatisticsSchema(BaseModel):
-    mean: float
-    percentile10: float
-    percentile90: float
+class RiskValue(BaseModel):
     losscategory: ELossCategory
-    tag: str
+    tag: list[str]
 
 
-class DamageValueStatisticsReportSchema(RiskValueStatisticsSchema):
-    percentage: float
+class LossValueStatisticsSchema(RiskValue):
+    loss_mean: float
+    loss_pc10: float
+    loss_pc90: float
 
 
-class DamageValueStatisticsSchema(BaseModel):
+class DamageValueStatisticsReportSchema(RiskValue):
+    damage_mean: float
+    damage_pc10: float
+    damage_pc90: float
+    damage_percentage: float
+
+
+class DamageValueStatisticsSchema(RiskValue):
     dg1_mean: float
     dg1_pc10: float
     dg1_pc90: float
@@ -161,6 +167,3 @@ class DamageValueStatisticsSchema(BaseModel):
     dg5_pc90: float
 
     buildings: float
-
-    losscategory: ELossCategory
-    tag: str

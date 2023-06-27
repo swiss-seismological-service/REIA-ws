@@ -38,87 +38,6 @@ def aggregation_type_subquery(aggregation_type):
         AggregationTag.type == aggregation_type).subquery()
 
 
-def read_country_loss(db: Session, calculation_id, loss_category):
-
-    risk_sub = select(LossValue).where(and_(
-        LossValue._calculation_oid == calculation_id,
-        LossValue.losscategory == loss_category,
-        LossValue._type == ECalculationType.LOSS
-    )).subquery()
-
-    agg_sub = select(AggregationTag).where(
-        AggregationTag.type == 'Canton'
-    ).subquery()
-
-    stmt = select(func.sum(risk_sub.c.loss_value).label('loss_value'),
-                  (func.sum(risk_sub.c.weight) /
-                   func.count(risk_sub.c._oid)).label('weight')
-                  ) \
-        .select_from(risk_sub) \
-        .join(riskvalue_aggregationtag, and_(
-            riskvalue_aggregationtag.c.riskvalue == risk_sub.c._oid,
-            riskvalue_aggregationtag.c.losscategory == risk_sub.c.losscategory,
-            riskvalue_aggregationtag.c._calculation_oid ==
-            risk_sub.c._calculation_oid
-        )) \
-        .join(agg_sub, and_(
-            agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
-        )) \
-        .where(and_(
-            risk_sub.c.losscategory == loss_category,
-            risk_sub.c._calculation_oid == calculation_id,
-            risk_sub.c._type == ECalculationType.LOSS
-        )) \
-        .group_by(
-            ((risk_sub.c._losscalculationbranch_oid *
-              (10 ** 9))+risk_sub.c.eventid).label('event'))
-
-    return pd.read_sql(stmt, db.get_bind())
-
-
-def read_country_damage(db: Session, calculation_id, loss_category):
-
-    damage_sub = select(DamageValue).where(and_(
-        DamageValue._calculation_oid == calculation_id,
-        DamageValue.losscategory == loss_category,
-        DamageValue._type == ECalculationType.DAMAGE
-    )).subquery()
-
-    agg_sub = select(AggregationTag).where(
-        AggregationTag.type == 'Canton'
-    ).subquery()
-    stmt = select(func.sum(damage_sub.c.dg2_value +
-                           damage_sub.c.dg3_value +
-                           damage_sub.c.dg4_value +
-                           damage_sub.c.dg5_value).label('damage_value'),
-                  (func.sum(damage_sub.c.weight) /
-                   func.count(damage_sub.c._oid)).label('weight')
-                  ) \
-        .select_from(damage_sub) \
-        .join(riskvalue_aggregationtag, and_(
-            riskvalue_aggregationtag.c.riskvalue == damage_sub.c._oid,
-            riskvalue_aggregationtag.c.losscategory ==
-            damage_sub.c.losscategory,
-            riskvalue_aggregationtag.c._calculation_oid ==
-            damage_sub.c._calculation_oid
-        )) \
-        .join(agg_sub, and_(
-            agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
-        )) \
-        .where(and_(
-            damage_sub.c.losscategory == loss_category,
-            damage_sub.c._calculation_oid == calculation_id,
-            damage_sub.c._type == ECalculationType.DAMAGE
-        )) \
-        .group_by(
-            ((damage_sub.c._damagecalculationbranch_oid *
-              (10 ** 9))+damage_sub.c.eventid).label('event'))
-
-    return pd.read_sql(stmt, db.get_bind())
-
-
 def read_total_buildings_country(
         db: Session, calculation_id: int) -> int | None:
     exp_sub = select(ExposureModel._oid) \
@@ -185,6 +104,8 @@ def read_aggregated_loss(db: Session,
 
     stmt = select(risk_sub.c.loss_value,
                   risk_sub.c.weight,
+                  risk_sub.c._losscalculationbranch_oid.label('branchid'),
+                  risk_sub.c.eventid,
                   agg_sub.c.name.label(aggregation_type)) \
         .select_from(risk_sub) \
         .join(riskvalue_aggregationtag, and_(
@@ -201,7 +122,8 @@ def read_aggregated_loss(db: Session,
             agg_sub.c.name.like(filter_like_tag) if filter_like_tag else True,
             (AggregationTag.name == filter_tag) if filter_tag else True,
             risk_sub.c.losscategory == loss_category,
-            risk_sub.c._calculation_oid == calculation_id
+            risk_sub.c._calculation_oid == calculation_id,
+            risk_sub.c._type == ECalculationType.LOSS
         ))
     return pd.read_sql(stmt, db.get_bind())
 
@@ -224,82 +146,7 @@ def read_aggregated_damage(db: Session,
                            filter_like_tag: str | None = None) \
         -> pd.DataFrame:
 
-    damage_sub = select(
-        DamageValue.dg2_value,
-        DamageValue.dg3_value,
-        DamageValue.dg4_value,
-        DamageValue.dg5_value,
-        DamageValue.weight,
-        DamageValue._calculation_oid,
-        DamageValue.losscategory,
-        DamageValue._oid,
-        DamageValue._type
-    ).where(and_(
-        DamageValue._calculation_oid == calculation_id,
-        DamageValue.losscategory == loss_category,
-        DamageValue._type == ECalculationType.DAMAGE
-    )).subquery()
-
-    agg_sub = select(
-        AggregationTag.name,
-        AggregationTag.type,
-        AggregationTag._oid
-    ).where(and_(
-            AggregationTag.type == aggregation_type,
-            AggregationTag.name.like(
-                filter_like_tag) if filter_like_tag else True,
-            (AggregationTag.name == filter_tag) if filter_tag else True
-            )).subquery()
-
-    stmt = select((damage_sub.c.dg2_value +
-                   damage_sub.c.dg3_value +
-                   damage_sub.c.dg4_value +
-                   damage_sub.c.dg5_value).label('damage_value'),
-                  damage_sub.c.weight,
-                  agg_sub.c.name.label(aggregation_type)) \
-        .select_from(damage_sub) \
-        .join(riskvalue_aggregationtag, and_(
-            riskvalue_aggregationtag.c.riskvalue == damage_sub.c._oid,
-            riskvalue_aggregationtag.c.losscategory ==
-            damage_sub.c.losscategory,
-            riskvalue_aggregationtag.c._calculation_oid ==
-            damage_sub.c._calculation_oid
-        )) \
-        .join(agg_sub, and_(
-            agg_sub.c._oid == riskvalue_aggregationtag.c.aggregationtag,
-            agg_sub.c.type == riskvalue_aggregationtag.c.aggregationtype
-        )) \
-        .where(and_(
-            agg_sub.c.name.like(filter_like_tag) if filter_like_tag else True,
-            (AggregationTag.name == filter_tag) if filter_tag else True,
-            damage_sub.c.losscategory == loss_category,
-            damage_sub.c._calculation_oid == calculation_id,
-            damage_sub.c._type == ECalculationType.DAMAGE
-        ))
-
-    return pd.read_sql(stmt, db.get_bind())
-
-
-def read_aggregated_damage_extended(db: Session,
-                                    calculation_id: int,
-                                    aggregation_type: str,
-                                    loss_category: ELossCategory,
-                                    filter_tag: str | None = None,
-                                    filter_like_tag: str | None = None) \
-        -> pd.DataFrame:
-
-    damage_sub = select(
-        DamageValue.dg1_value,
-        DamageValue.dg2_value,
-        DamageValue.dg3_value,
-        DamageValue.dg4_value,
-        DamageValue.dg5_value,
-        DamageValue.weight,
-        DamageValue._calculation_oid,
-        DamageValue.losscategory,
-        DamageValue._oid,
-        DamageValue._type
-    ).where(and_(
+    damage_sub = select(DamageValue).where(and_(
         DamageValue._calculation_oid == calculation_id,
         DamageValue.losscategory == loss_category,
         DamageValue._type == ECalculationType.DAMAGE
@@ -322,6 +169,8 @@ def read_aggregated_damage_extended(db: Session,
                   damage_sub.c.dg4_value.label('dg4_value'),
                   damage_sub.c.dg5_value.label('dg5_value'),
                   damage_sub.c.weight,
+                  damage_sub.c._damagecalculationbranch_oid.label('branchid'),
+                  damage_sub.c.eventid,
                   agg_sub.c.name.label(aggregation_type)) \
         .select_from(damage_sub) \
         .join(riskvalue_aggregationtag, and_(

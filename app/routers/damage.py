@@ -1,6 +1,5 @@
 from typing import Literal
 
-import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
@@ -9,76 +8,37 @@ from app import crud
 from app.dependencies import get_db
 from app.schemas import (DamageValueStatisticsReportSchema,
                          DamageValueStatisticsSchema)
-from app.utils import (calculate_statistics, calculate_statistics_extended,
-                       csv_response)
+from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
+                       csv_response, merge_statistics_to_buildings)
 
 router = APIRouter(prefix='/damage', tags=['damage'])
 
 
-@router.get("/{calculation_id}/{damage_category}/Country",
-            response_model=DamageValueStatisticsReportSchema,
-            response_model_exclude_none=True)
-async def get_country_damage(calculation_id: int,
-                             damage_category: ELossCategory,
-                             format: str = 'json',
-                             db: Session = Depends(get_db)):
-    """
-    Returns a list of all realizations of loss for a calculation.
-    """
-    db_buildings = crud.read_total_buildings_country(db, calculation_id)
+def calculate_damages(calculation_id: int,
+                      aggregation_type: str,
+                      damage_category: ELossCategory,
+                      filter_tag_like: str | None = None,
+                      format: Literal['json', 'csv'] = 'json',
+                      sum: bool = False,
+                      db: Session = Depends(get_db)):
 
-    db_result = crud.read_country_damage(db, calculation_id, damage_category)
-
-    if db_result.empty or not db_buildings:
-        if not crud.read_calculation(db, calculation_id):
-            raise HTTPException(status_code=404, detail="No damage found.")
-        else:
-            return DamageValueStatisticsReportSchema(
-                mean=0,
-                percentile10=0,
-                percentile90=0,
-                percentage=0,
-                losscategory=damage_category,
-                tag='CH')
-    db_result['Country'] = 'CH'
-
-    statistics = calculate_statistics(db_result, 'Country')
-    statistics['losscategory'] = damage_category.value
-    statistics['percentage'] = statistics['mean'] / db_buildings * 100
-
-    if format == 'csv':
-        return csv_response(statistics, 'loss')
-
-    return [DamageValueStatisticsReportSchema.parse_obj(x)
-            for x in statistics.to_dict('records')][0]
-
-
-@router.get("/{calculation_id}/{damage_category}/{aggregation_type}/report",
-            response_model=list[DamageValueStatisticsReportSchema],
-            response_model_exclude_none=True)
-async def get_damage_report(calculation_id: int,
-                            aggregation_type: str,
-                            damage_category: ELossCategory,
-                            aggregation_tag: str | None = None,
-                            format: str = 'json',
-                            db: Session = Depends(get_db)):
-    """
-    Returns a list of all realizations of loss for a calculation.
-    """
-
-    like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
+    like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
     tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
 
     if tags.empty:
         raise HTTPException(
-            status_code=404, detail="No aggregationtags found.")
+            status_code=404, detail="Aggregationtag not found.")
 
     db_result = crud.read_aggregated_damage(
         db, calculation_id,
         aggregation_type,
         damage_category,
         filter_like_tag=like_tag)
+
+    db_result['damage_value'] = \
+        db_result['dg2_value'] + db_result['dg3_value'] + \
+        db_result['dg4_value'] + db_result['dg5_value']
 
     db_buildings = crud.read_total_buildings(
         db, calculation_id,
@@ -87,23 +47,35 @@ async def get_damage_report(calculation_id: int,
 
     if db_result.empty or db_buildings.empty:
         if not crud.read_calculation(db, calculation_id):
-            raise HTTPException(status_code=404, detail="No damage found.")
+            raise HTTPException(
+                status_code=404, detail="Damage calculation not found.")
 
     db_result = db_result.merge(
         tags, how='outer', on=aggregation_type).fillna(0)
 
+    if sum:
+        db_result = aggregate_by_branch_and_event(db_result, aggregation_type)
+
     statistics = calculate_statistics(db_result, aggregation_type)
+
     statistics['losscategory'] = damage_category.value
 
-    percentages = pd.DataFrame(
-        {'percentage': statistics.set_index('tag')['mean'] /
-         db_buildings.set_index(aggregation_type)['buildingcount'] * 100})
+    statistics = merge_statistics_to_buildings(
+        statistics, db_buildings, aggregation_type)
 
-    statistics = statistics.merge(
-        percentages, how='outer', left_on='tag', right_index=True).fillna(0)
+    statistics['damage_percentage'] = statistics['damage_mean'] / \
+        statistics['buildings'] * 100
+    return statistics
+
+
+@router.get("/{calculation_id}/{damage_category}/{aggregation_type}/report",
+            include_in_schema=False,
+            response_model=list[DamageValueStatisticsReportSchema],
+            response_model_exclude_none=True)
+async def get_damage_report(statistics=Depends(calculate_damages)):
 
     if format == 'csv':
-        return csv_response(statistics, 'loss')
+        return csv_response(statistics, 'damage')
 
     return [DamageValueStatisticsReportSchema.parse_obj(x)
             for x in statistics.to_dict('records')]
@@ -112,51 +84,7 @@ async def get_damage_report(calculation_id: int,
 @router.get("/{calculation_id}/{damage_category}/{aggregation_type}",
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
-async def get_damage(calculation_id: int,
-                     aggregation_type: str,
-                     damage_category: ELossCategory,
-                     aggregation_tag: str | None = None,
-                     format: Literal['json', 'csv'] = 'json',
-                     db: Session = Depends(get_db)):
-    """
-    Returns a list of the damage for a specific category and aggregated
-    by a specific aggregation type.
-    """
-
-    like_tag = f'%{aggregation_tag}%' if aggregation_tag else None
-
-    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
-
-    if tags.empty:
-        raise HTTPException(
-            status_code=404, detail="Aggregationtag not found.")
-
-    db_result = crud.read_aggregated_damage_extended(
-        db, calculation_id,
-        aggregation_type,
-        damage_category,
-        filter_like_tag=like_tag)
-
-    db_buildings = crud.read_total_buildings(
-        db, calculation_id,
-        aggregation_type,
-        filter_like_tag=like_tag)
-
-    if db_result.empty or db_buildings.empty:
-        if not crud.read_calculation(db, calculation_id):
-            raise HTTPException(status_code=404, detail="No damage found.")
-
-    db_result = db_result.merge(
-        tags, how='outer', on=aggregation_type).fillna(0)
-
-    statistics = calculate_statistics_extended(db_result, aggregation_type)
-    statistics['losscategory'] = damage_category.value
-
-    statistics = statistics.merge(
-        db_buildings.rename(columns={'buildingcount': 'buildings'}),
-        how='outer',
-        left_on='tag',
-        right_on=aggregation_type).fillna(0)
+async def get_damage(statistics=Depends(calculate_damages)):
 
     if format == 'csv':
         return csv_response(statistics, 'damage')

@@ -13,34 +13,27 @@ def csv_response(data: pd.DataFrame, filename: str) -> StreamingResponse:
                  f"attachment;filename={filename}.csv"})
 
 
-def calculate_statistics(data: pd.DataFrame, aggregation_type: str):
-    # either loss_value or damage_value
-    value_column = next(i for i in data.columns if 'value' in i)
+def aggregate_by_branch_and_event(
+        data: pd.DataFrame, aggregation_type) -> pd.DataFrame:
 
-    # calculate weighted loss
-    data['weighted'] = data['weight'] * \
-        data[value_column]
+    group = data.groupby(
+        lambda x: data['branchid'].loc[x] *
+        (10 ** 9) + data['eventid'].loc[x])
 
-    # initialize with mean
-    statistics = pd.DataFrame({'mean': data.groupby(
-        aggregation_type)['weighted'].sum()})
+    value_column = [i for i in data.columns if 'value' in i]
 
-    # calculate quantiles
-    statistics['percentile10'], statistics['percentile90'] = \
-        zip(*data.groupby(aggregation_type).apply(
-            lambda x: weighted_quantile(
-                x[value_column], (0.1, 0.9), x['weight'])))
-
-    # drop intermediate column again form original df
-    data.drop(columns=['weighted'])
-
-    statistics = statistics.rename_axis(
-        'tag').reset_index()
-
-    return statistics
+    values = pd.DataFrame()
+    values['weight'] = group.apply(
+        lambda x: x['weight'].sum() / len(x))
+    for name in value_column:
+        values[name] = group.apply(
+            lambda x: x[name].sum())
+    values[aggregation_type] = False
+    return values
 
 
-def calculate_statistics_extended(data: pd.DataFrame, aggregation_type: str):
+def calculate_statistics(
+        data: pd.DataFrame, aggregation_type: str) -> pd.DataFrame:
     # either loss_value or damage_value
     value_column = [i for i in data.columns if 'value' in i]
 
@@ -69,5 +62,27 @@ def calculate_statistics_extended(data: pd.DataFrame, aggregation_type: str):
 
     statistics = statistics.rename_axis(
         'tag').reset_index()
+
+    statistics['tag'] = statistics['tag'].apply(lambda x: [x] if x else [])
+
+    return statistics
+
+
+def merge_statistics_to_buildings(statistics: pd.DataFrame,
+                                  buildings: pd.DataFrame,
+                                  aggregation_type: str) -> pd.DataFrame:
+    statistics['merge_tag'] = statistics['tag'].apply(
+        lambda x: ''.join(sorted(x)))
+    buildings = pd.concat([
+        buildings,
+        pd.DataFrame([{'buildingcount': buildings['buildingcount'].sum(),
+                       aggregation_type: ''}])
+    ], ignore_index=True)
+
+    statistics = statistics.merge(
+        buildings.rename(columns={'buildingcount': 'buildings'}),
+        how='inner',
+        left_on='merge_tag',
+        right_on=aggregation_type).fillna(0)
 
     return statistics
