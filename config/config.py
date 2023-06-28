@@ -23,20 +23,33 @@ class Settings(BaseSettings):
     EARTHQUAKE_INFO_PASSWORD: str
     EARTHQUAKE_INFO_DB: str
 
+    @property
+    def EARTHQUAKE_INFO(self) -> str:
+        return f'dbname={self.EARTHQUAKE_INFO_DB} ' \
+            f'user={self.EARTHQUAKE_INFO_USER} ' \
+            f'host={self.EARTHQUAKE_INFO_SERVER} ' \
+            f'password={self.EARTHQUAKE_INFO_PASSWORD} ' \
+            f'port={self.EARTHQUAKE_INFO_PORT}'
+
+    @property
+    def SCENARIO_INFO(self) -> str:
+        return f'dbname={self.SCENARIO_INFO_DB} ' \
+            f'user={self.SCENARIO_INFO_USER} ' \
+            f'host={self.SCENARIO_INFO_SERVER} ' \
+            f'password={self.SCENARIO_INFO_PASSWORD} ' \
+            f'port={self.SCENARIO_INFO_PORT}'
+
+    @property
+    def SQLALCHEMY_DATABASE_URL(self) -> str:
+        return f"postgresql://{self.DB_USER}:" \
+            f"{self.DB_PASSWORD}@" \
+            f"{self.POSTGRES_HOST}:" \
+            f"{self.POSTGRES_PORT}/{self.DB_NAME}"
+
     class Config:
         env_file = ".env"
 
 
 @lru_cache()
 def get_settings():
-    Settings.SCENARIO_INFO = f'dbname={Settings().SCENARIO_INFO_DB} ' \
-        f'user={Settings().SCENARIO_INFO_USER} ' \
-        f'host={Settings().SCENARIO_INFO_SERVER} ' \
-        f'password={Settings().SCENARIO_INFO_PASSWORD} ' \
-        f'port={Settings().SCENARIO_INFO_PORT}'
-    Settings.EARTHQUAKE_INFO = f'dbname={Settings().EARTHQUAKE_INFO_DB} ' \
-        f'user={Settings().EARTHQUAKE_INFO_USER} ' \
-        f'host={Settings().EARTHQUAKE_INFO_SERVER} ' \
-        f'password={Settings().EARTHQUAKE_INFO_PASSWORD} ' \
-        f'port={Settings().EARTHQUAKE_INFO_PORT}'
     return Settings()

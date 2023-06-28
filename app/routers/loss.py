@@ -5,7 +5,7 @@ from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.dependencies import get_db
+from app.database import get_db
 from app.schemas import LossValueStatisticsSchema
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response)

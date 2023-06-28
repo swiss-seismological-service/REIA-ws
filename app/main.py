@@ -4,7 +4,7 @@ from reia.datamodel.base import ORMBase
 
 from app.database import engine
 from app.routers import calculation, damage, loss, origin, riskassessment
-from config.config import get_settings
+from config import get_settings
 
 ORMBase.metadata.create_all(bind=engine)
 

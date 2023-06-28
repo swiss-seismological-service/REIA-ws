@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.dependencies import get_db
+from app.database import get_db
 from app.schemas import DamageCalculationSchema, LossCalculationSchema
 
 router = APIRouter(prefix='/calculation', tags=['calculations'])
