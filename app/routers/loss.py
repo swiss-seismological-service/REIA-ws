@@ -1,12 +1,9 @@
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException
-from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.database import get_db
-from app.schemas import LossValueStatisticsSchema
+from app.schemas import LossValueStatisticsSchema, ReturnFormats, RiskCategory
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response)
 
@@ -18,15 +15,16 @@ router = APIRouter(prefix='/loss', tags=['loss'])
             response_model_exclude_none=True)
 async def get_losses(calculation_id: int,
                      aggregation_type: str,
-                     loss_category: ELossCategory,
+                     loss_category: RiskCategory,
                      filter_tag_like: str | None = None,
-                     format: Literal['json', 'csv'] = 'json',
+                     format: ReturnFormats = ReturnFormats.JSON,
                      sum: bool = False,
                      db: Session = Depends(get_db)):
     """
     Returns a list of the loss for a specific category and aggregated
     by a specific aggregation type.
     """
+
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
     tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
@@ -55,9 +53,9 @@ async def get_losses(calculation_id: int,
 
     statistics = calculate_statistics(db_result, aggregation_type)
 
-    statistics['losscategory'] = loss_category.value
+    statistics['category'] = loss_category
 
-    if format == 'csv':
+    if format == ReturnFormats.CSV:
         return csv_response(statistics, 'loss')
 
     return [LossValueStatisticsSchema.parse_obj(x)

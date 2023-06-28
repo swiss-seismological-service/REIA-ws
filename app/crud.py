@@ -12,6 +12,8 @@ from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
+from app.schemas import RiskCategory
+
 
 def losscategory_filter(f, model):
     return model.losscategory == f if f else True
@@ -85,10 +87,12 @@ def read_total_buildings(db: Session,
 def read_aggregated_loss(db: Session,
                          calculation_id: int,
                          aggregation_type: str,
-                         loss_category: ELossCategory,
+                         loss_category: RiskCategory,
                          filter_tag: str | None = None,
                          filter_like_tag: str | None = None) \
         -> pd.DataFrame:
+
+    loss_category = ELossCategory[loss_category.name]
 
     risk_sub = select(LossValue).where(and_(
         LossValue._calculation_oid == calculation_id,
@@ -141,10 +145,12 @@ def read_aggregationtags(db: Session, aggregation_type: str,
 def read_aggregated_damage(db: Session,
                            calculation_id: int,
                            aggregation_type: str,
-                           loss_category: ELossCategory,
+                           loss_category: RiskCategory,
                            filter_tag: str | None = None,
                            filter_like_tag: str | None = None) \
         -> pd.DataFrame:
+
+    loss_category = ELossCategory[loss_category.name]
 
     damage_sub = select(DamageValue).where(and_(
         DamageValue._calculation_oid == calculation_id,

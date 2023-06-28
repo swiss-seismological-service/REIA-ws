@@ -1,10 +1,11 @@
 # import enum
+import enum
 from datetime import datetime
 from typing import Any, Optional, Type
 
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.utils import GetterDict
-from reia.datamodel import EEarthquakeType, ELossCategory, EStatus
+from reia.datamodel import EEarthquakeType, EStatus
 from sqlalchemy.inspection import inspect
 
 BaseConfig.arbitrary_types_allowed = True
@@ -50,6 +51,19 @@ def creationinfo_factory() -> Type[BaseModel]:
         __config__=BaseConfig,
         **_func_map)
     return retval
+
+
+class RiskCategory(str, enum.Enum):
+    CONTENTS = 'contents'
+    BUSINESS_INTERRUPTION = 'displaced'
+    NONSTRUCTURAL = 'injured'
+    OCCUPANTS = 'fatalities'
+    STRUCTURAL = 'structural'
+
+
+class ReturnFormats(str, enum.Enum):
+    JSON = 'json'
+    CSV = 'csv'
 
 
 class CreationInfo(creationinfo_factory()):
@@ -128,7 +142,7 @@ class RiskAssessmentInfoSchema(BaseModel):
 
 
 class RiskValue(BaseModel):
-    losscategory: ELossCategory
+    category: RiskCategory
     tag: list[str]
 
 

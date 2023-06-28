@@ -1,27 +1,24 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pandas import DataFrame
-from reia.datamodel import ELossCategory
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.database import get_db
 from app.schemas import (DamageValueStatisticsReportSchema,
-                         DamageValueStatisticsSchema)
+                         DamageValueStatisticsSchema, ReturnFormats,
+                         RiskCategory)
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response, merge_statistics_to_buildings)
-from config import Settings, get_settings
 
 router = APIRouter(prefix='/damage', tags=['damage'])
 
 
 def calculate_damages(calculation_id: int,
                       aggregation_type: str,
-                      damage_category: ELossCategory,
-                      settings: Annotated[Settings, Depends(get_settings)],
+                      damage_category: RiskCategory,
                       filter_tag_like: str | None = None,
-                      format: Literal['json', 'csv'] = 'json',
                       sum: bool = False,
                       db: Session = Depends(get_db)):
 
@@ -61,7 +58,7 @@ def calculate_damages(calculation_id: int,
 
     statistics = calculate_statistics(db_result, aggregation_type)
 
-    statistics['losscategory'] = damage_category.value
+    statistics['category'] = damage_category
 
     statistics = merge_statistics_to_buildings(
         statistics, db_buildings, aggregation_type)
@@ -76,9 +73,10 @@ def calculate_damages(calculation_id: int,
             response_model=list[DamageValueStatisticsReportSchema],
             response_model_exclude_none=True)
 async def get_damage_report(
-        statistics: Annotated[DataFrame, Depends(calculate_damages)]):
+        statistics: Annotated[DataFrame, Depends(calculate_damages)],
+        format: ReturnFormats = ReturnFormats.JSON,):
 
-    if format == 'csv':
+    if format == ReturnFormats.CSV:
         return csv_response(statistics, 'damage')
 
     return [DamageValueStatisticsReportSchema.parse_obj(x)
@@ -89,9 +87,10 @@ async def get_damage_report(
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
 async def get_damage(
-        statistics: Annotated[DataFrame, Depends(calculate_damages)]):
+    statistics: Annotated[DataFrame, Depends(calculate_damages)],
+        format: ReturnFormats = ReturnFormats.JSON,):
 
-    if format == 'csv':
+    if format == ReturnFormats.CSV:
         return csv_response(statistics, 'damage')
 
     return [DamageValueStatisticsSchema.parse_obj(x)
