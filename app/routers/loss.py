@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.database import get_db
-from app.schemas import LossValueStatisticsSchema, ReturnFormats, RiskCategory
+from app.schemas import LossValueStatisticsSchema, ReturnFormats
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response)
+from config import Settings
 
 router = APIRouter(prefix='/loss', tags=['loss'])
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix='/loss', tags=['loss'])
             response_model_exclude_none=True)
 async def get_losses(calculation_id: int,
                      aggregation_type: str,
-                     loss_category: RiskCategory,
+                     loss_category: Settings.RiskCategory,
                      filter_tag_like: str | None = None,
                      format: ReturnFormats = ReturnFormats.JSON,
                      sum: bool = False,

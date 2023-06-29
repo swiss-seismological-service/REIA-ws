@@ -1,4 +1,5 @@
 .env.production
+.env.development
 logs/
 *.env
 */postgresql.conf

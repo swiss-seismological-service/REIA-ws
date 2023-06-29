@@ -12,7 +12,7 @@ from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
-from app.schemas import RiskCategory
+from config import Settings
 
 
 def losscategory_filter(f, model):
@@ -96,7 +96,7 @@ def read_total_buildings(db: Session,
 def read_aggregated_loss(db: Session,
                          calculation_id: int,
                          aggregation_type: str,
-                         loss_category: RiskCategory,
+                         loss_category: Settings.RiskCategory,
                          filter_tag: str | None = None,
                          filter_like_tag: str | None = None) \
         -> pd.DataFrame:
@@ -154,7 +154,7 @@ def read_aggregationtags(db: Session, aggregation_type: str,
 def read_aggregated_damage(db: Session,
                            calculation_id: int,
                            aggregation_type: str,
-                           loss_category: RiskCategory,
+                           loss_category: Settings.RiskCategory,
                            filter_tag: str | None = None,
                            filter_like_tag: str | None = None) \
         -> pd.DataFrame:

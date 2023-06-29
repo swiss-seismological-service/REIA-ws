@@ -7,6 +7,8 @@ from pydantic.utils import GetterDict
 from reia.datamodel import EEarthquakeType, EStatus
 from sqlalchemy.inspection import inspect
 
+from config import Settings
+
 BaseConfig.arbitrary_types_allowed = True
 BaseConfig.orm_mode = True
 
@@ -54,14 +56,6 @@ def creationinfo_factory() -> Type[BaseModel]:
         __config__=BaseConfig,
         **_func_map)
     return retval
-
-
-class RiskCategory(str, enum.Enum):
-    CONTENTS = 'contents'
-    BUSINESS_INTERRUPTION = 'displaced'
-    NONSTRUCTURAL = 'injured'
-    OCCUPANTS = 'fatalities'
-    STRUCTURAL = 'structural'
 
 
 class ReturnFormats(str, enum.Enum):
@@ -145,7 +139,7 @@ class RiskAssessmentInfoSchema(BaseModel):
 
 
 class RiskValue(BaseModel):
-    category: RiskCategory
+    category: Settings.RiskCategory
     tag: list[str]
 
 

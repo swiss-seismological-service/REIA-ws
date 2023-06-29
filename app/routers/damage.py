@@ -7,17 +7,17 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.database import get_db
 from app.schemas import (DamageValueStatisticsReportSchema,
-                         DamageValueStatisticsSchema, ReturnFormats,
-                         RiskCategory)
+                         DamageValueStatisticsSchema, ReturnFormats)
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response, merge_statistics_to_buildings)
+from config import Settings
 
 router = APIRouter(prefix='/damage', tags=['damage'])
 
 
 def calculate_damages(calculation_id: int,
                       aggregation_type: str,
-                      damage_category: RiskCategory,
+                      damage_category: Settings.RiskCategory,
                       filter_tag_like: str | None = None,
                       sum: bool = False,
                       db: Session = Depends(get_db)):

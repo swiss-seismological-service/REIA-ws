@@ -1,3 +1,4 @@
+import enum
 from functools import lru_cache
 
 from pydantic import BaseSettings
@@ -22,6 +23,13 @@ class Settings(BaseSettings):
     EARTHQUAKE_INFO_USER: str
     EARTHQUAKE_INFO_PASSWORD: str
     EARTHQUAKE_INFO_DB: str
+
+    class RiskCategory(str, enum.Enum):
+        CONTENTS = 'contents'
+        BUSINESS_INTERRUPTION = 'displaced'
+        NONSTRUCTURAL = 'injured'
+        OCCUPANTS = 'fatalities'
+        STRUCTURAL = 'structural'
 
     @property
     def EARTHQUAKE_INFO(self) -> str:
