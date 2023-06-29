@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.database import Aggregation, get_db
+from app.database import get_db
 from app.schemas import LossValueStatisticsSchema, ReturnFormats, RiskCategory
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
                        csv_response)
@@ -14,7 +14,7 @@ router = APIRouter(prefix='/loss', tags=['loss'])
             response_model=list[LossValueStatisticsSchema],
             response_model_exclude_none=True)
 async def get_losses(calculation_id: int,
-                     aggregation_type: Aggregation.types,
+                     aggregation_type: str,
                      loss_category: RiskCategory,
                      filter_tag_like: str | None = None,
                      format: ReturnFormats = ReturnFormats.JSON,
@@ -24,8 +24,6 @@ async def get_losses(calculation_id: int,
     Returns a list of the loss for a specific category and aggregated
     by a specific aggregation type.
     """
-
-    aggregation_type = aggregation_type.value
 
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 

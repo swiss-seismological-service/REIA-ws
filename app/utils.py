@@ -1,7 +1,23 @@
 import pandas as pd
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 from app.wquantile import weighted_quantile
+
+
+def replace_path_param_type(app: FastAPI,
+                            path_param: str,
+                            new_type: type):
+
+    for i, route in enumerate(app.router.routes):
+        if f'{{{path_param}}}' in route.path:
+            path = route.path
+            route.endpoint.__annotations__[path_param] = new_type
+            endpoint = route.endpoint
+            methods = route.methods
+
+            del app.router.routes[i]
+            app.add_api_route(path, endpoint, methods=methods)
 
 
 def csv_response(data: pd.DataFrame, filename: str) -> StreamingResponse:

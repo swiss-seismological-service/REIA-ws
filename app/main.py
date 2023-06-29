@@ -10,6 +10,7 @@ ORMBase.metadata.create_all(bind=engine)
 
 app = FastAPI(root_path=get_settings().ROOT_PATH,
               title="Rapid Earthquake Impact Assessment Switzerland")
+
 app.include_router(loss.router, prefix='/v1')
 app.include_router(damage.router, prefix='/v1')
 app.include_router(riskassessment.router, prefix='/v1')
