@@ -1,4 +1,3 @@
-# import enum
 import enum
 from datetime import datetime
 from typing import Any, Optional, Type
@@ -10,6 +9,10 @@ from sqlalchemy.inspection import inspect
 
 BaseConfig.arbitrary_types_allowed = True
 BaseConfig.orm_mode = True
+
+
+class Aggregation():
+    pass
 
 
 class ValueGetter(GetterDict):

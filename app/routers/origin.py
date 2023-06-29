@@ -12,16 +12,6 @@ from app.schemas import (RiskAssessmentDescriptionSchema,
 router = APIRouter(prefix='/origin', tags=['origin'])
 
 
-@router.get('/{originid}/dangerlevel')
-async def read_danger_level(originid: str, db: Session = Depends(get_db)):
-    """
-    Returns the danger level for the given originid.
-    """
-    originid = base64.b64decode(originid).decode('utf-8')
-    db_result = crud.read_danger_levels((originid,))
-    return db_result
-
-
 @router.get('/{originid}', response_model=RiskAssessmentInfoSchema)
 async def read_info(originid: str, db: Session = Depends(get_db)):
     originid = base64.b64decode(originid).decode('utf-8')
@@ -30,6 +20,16 @@ async def read_info(originid: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=404, detail='No info found for originid.')
     return db_result[0]
+
+
+@router.get('/{originid}/dangerlevel')
+async def read_danger_level(originid: str, db: Session = Depends(get_db)):
+    """
+    Returns the danger level for the given originid.
+    """
+    originid = base64.b64decode(originid).decode('utf-8')
+    db_result = crud.read_danger_levels((originid,))
+    return db_result
 
 
 @router.get('/{originid}/description/{lang}',

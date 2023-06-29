@@ -40,6 +40,15 @@ def aggregation_type_subquery(aggregation_type):
         AggregationTag.type == aggregation_type).subquery()
 
 
+def get_aggregation_types(db: Session):
+    stmt = select(AggregationTag.type).distinct()
+    types = db.execute(stmt).scalars().all()
+    edict = {}
+    for t in types:
+        edict[t.upper()] = t
+    return edict
+
+
 def read_total_buildings_country(
         db: Session, calculation_id: int) -> int | None:
     exp_sub = select(ExposureModel._oid) \
