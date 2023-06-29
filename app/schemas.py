@@ -13,10 +13,6 @@ BaseConfig.arbitrary_types_allowed = True
 BaseConfig.orm_mode = True
 
 
-class Aggregation():
-    pass
-
-
 class ValueGetter(GetterDict):
     def get(self, key: str, default: Any) -> Any:
         # if the key-col mapping is 1:1 just return the value
