@@ -1,6 +1,6 @@
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Select, create_engine, func, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from config import get_settings
 
@@ -16,3 +16,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def paginate(
+        session: Session, query: Select, limit: int, offset: int) -> dict:
+    return {
+        'count': session.scalar(select(func.count())
+                                .select_from(query.subquery())),
+        'items': [todo for todo in session.scalars(query.limit(limit)
+                                                   .offset(offset))]
+    }

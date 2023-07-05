@@ -1,11 +1,9 @@
 import base64
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
 
 from app import crud
-from app.database import get_db
 from app.schemas import (RiskAssessmentDescriptionSchema,
                          RiskAssessmentInfoSchema)
 
@@ -13,7 +11,7 @@ router = APIRouter(prefix='/origin', tags=['origin'])
 
 
 @router.get('/{originid}', response_model=RiskAssessmentInfoSchema)
-async def read_info(originid: str, db: Session = Depends(get_db)):
+async def read_info(originid: str):
     originid = base64.b64decode(originid).decode('utf-8')
     db_result = crud.read_ria_parameters((originid,))
     if not db_result:
@@ -23,7 +21,7 @@ async def read_info(originid: str, db: Session = Depends(get_db)):
 
 
 @router.get('/{originid}/dangerlevel')
-async def read_danger_level(originid: str, db: Session = Depends(get_db)):
+async def read_danger_level(originid: str):
     """
     Returns the danger level for the given originid.
     """
@@ -35,8 +33,7 @@ async def read_danger_level(originid: str, db: Session = Depends(get_db)):
 @router.get('/{originid}/description/{lang}',
             response_model=RiskAssessmentDescriptionSchema,)
 async def read_description(originid: str,
-                           lang: Literal['de', 'en', 'fr', 'it'],
-                           db: Session = Depends(get_db)):
+                           lang: Literal['de', 'en', 'fr', 'it']):
     """
     Returns the description of the event for the given originid and language.
     """

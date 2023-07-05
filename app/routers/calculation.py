@@ -1,27 +1,30 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.database import get_db
-from app.schemas import DamageCalculationSchema, LossCalculationSchema
+from app.database import get_db, paginate
+from app.schemas import (DamageCalculationSchema, LossCalculationSchema,
+                         PaginatedResponse)
 
 router = APIRouter(prefix='/calculation', tags=['calculations'])
 
 
 @router.get('',
-            response_model=list[LossCalculationSchema |
-                                DamageCalculationSchema],
+            response_model=PaginatedResponse[LossCalculationSchema |
+                                             DamageCalculationSchema],
             response_model_exclude_none=True)
 async def read_calculations(starttime: datetime | None = None,
                             endtime: datetime | None = None,
+                            limit: int = Query(50, ge=0),
+                            offset: int = Query(0, ge=0),
                             db: Session = Depends(get_db)):
     '''
     Returns a list of calculations.
     '''
     db_result = crud.read_calculations(db, starttime, endtime)
-    return db_result or []
+    return paginate(db, db_result, limit, offset)
 
 
 @router.get('/{oid}',

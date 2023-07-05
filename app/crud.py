@@ -230,7 +230,11 @@ def read_risk_assessments(
         stmt = stmt.filter(RiskAssessment.published == published)
     if preferred:
         stmt = stmt.filter(RiskAssessment.preferred == preferred)
-    return db.execute(stmt).unique().scalars().all()
+
+    # using pagination and only returning query statement
+    # return db.execute(stmt).unique().scalars().all()
+
+    return stmt
 
 
 def read_risk_assessment(db: Session, oid: int) -> RiskAssessment:
@@ -249,7 +253,11 @@ def read_calculations(db: Session, starttime: datetime | None,
     if endtime:
         stmt = stmt.filter(
             Calculation.creationinfo_creationtime <= endtime)
-    return db.execute(stmt).unique().scalars().all()
+
+    # using pagination and only returning query statement
+    # return db.execute(stmt).unique().scalars().all()
+
+    return stmt
 
 
 def read_calculation(db: Session, id: int) -> Calculation:

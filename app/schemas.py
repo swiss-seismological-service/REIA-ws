@@ -1,8 +1,9 @@
 import enum
 from datetime import datetime
-from typing import Any, Optional, Type
+from typing import Any, Generic, List, Optional, Type, TypeVar
 
 from pydantic import BaseConfig, BaseModel, Field, create_model
+from pydantic.generics import GenericModel
 from pydantic.utils import GetterDict
 from reia.datamodel import EEarthquakeType, EStatus
 from sqlalchemy.inspection import inspect
@@ -11,6 +12,15 @@ from config import Settings
 
 BaseConfig.arbitrary_types_allowed = True
 BaseConfig.orm_mode = True
+
+M = TypeVar('M')
+
+
+class PaginatedResponse(GenericModel, Generic[M]):
+    count: int = Field(description='Number of items returned in the response')
+    items: List[M] = Field(
+        description='List of items returned in the '
+        'response following given criteria')
 
 
 class ValueGetter(GetterDict):
