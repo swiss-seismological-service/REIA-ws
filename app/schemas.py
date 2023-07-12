@@ -136,6 +136,7 @@ class RiskAssessmentDescriptionSchema(BaseModel):
 
 class RiskAssessmentInfoSchema(BaseModel):
     time: datetime | None = None
+    eventid: str | None = None
     depth: float | None = None
     magnitude: float | None = None
     evaluationmode: str | None = None
