@@ -5,11 +5,11 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    DB_USER: str
-    DB_PASSWORD: str
     POSTGRES_HOST: str
     POSTGRES_PORT: str
-    DB_NAME: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     ROOT_PATH: str
 
     SCENARIO_INFO_SERVER: str
@@ -49,10 +49,10 @@ class Settings(BaseSettings):
 
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
-        return f"postgresql://{self.DB_USER}:" \
-            f"{self.DB_PASSWORD}@" \
+        return f"postgresql://{self.POSTGRES_USER}:" \
+            f"{self.POSTGRES_PASSWORD}@" \
             f"{self.POSTGRES_HOST}:" \
-            f"{self.POSTGRES_PORT}/{self.DB_NAME}"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     class Config:
         env_file = ".env"
