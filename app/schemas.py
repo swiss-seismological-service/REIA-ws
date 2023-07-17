@@ -130,21 +130,6 @@ class RiskAssessmentSchema(BaseModel):
         getter_dict = ValueGetter
 
 
-class RiskAssessmentDescriptionSchema(BaseModel):
-    description: str | None = None
-
-
-class RiskAssessmentInfoSchema(BaseModel):
-    time: datetime | None = None
-    eventid: str | None = None
-    depth: float | None = None
-    magnitude: float | None = None
-    evaluationmode: str | None = None
-    region: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-
-
 class RiskValue(BaseModel):
     category: Settings.RiskCategory
     tag: list[str]

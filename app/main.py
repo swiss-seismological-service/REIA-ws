@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import calculation, damage, loss, origin, riskassessment
+from app.routers import calculation, damage, loss, riskassessment
 from config import get_settings
 
 app = FastAPI(root_path=get_settings().ROOT_PATH,
@@ -11,7 +11,6 @@ app.include_router(loss.router, prefix='/v1')
 app.include_router(damage.router, prefix='/v1')
 app.include_router(riskassessment.router, prefix='/v1')
 app.include_router(calculation.router, prefix='/v1')
-app.include_router(origin.router, prefix='/v1')
 
 
 origins = [
