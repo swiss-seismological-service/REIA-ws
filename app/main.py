@@ -1,12 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from reia.datamodel.base import ORMBase
 
-from app.database import engine
 from app.routers import calculation, damage, loss, origin, riskassessment
 from config import get_settings
-
-ORMBase.metadata.create_all(bind=engine)
 
 app = FastAPI(root_path=get_settings().ROOT_PATH,
               title="Rapid Earthquake Impact Assessment Switzerland")

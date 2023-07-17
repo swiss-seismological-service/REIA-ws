@@ -8,7 +8,7 @@ psycopg2>=2.9.3
 pytest>=7.1.3
 pytest-cov>=4.0.0
 pytest-dotenv>=0.5.2
-pydantic<=2.0.0
+pydantic<2.0.0
 reia @ git+https://github.com/swiss-seismological-service/REIA.git
 scipy>=1.10.1
 SQLAlchemy>=2.0.0
