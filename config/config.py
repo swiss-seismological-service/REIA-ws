@@ -12,17 +12,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     ROOT_PATH: str
 
-    SCENARIO_INFO_SERVER: str
-    SCENARIO_INFO_PORT: str
-    SCENARIO_INFO_USER: str
-    SCENARIO_INFO_PASSWORD: str
-    SCENARIO_INFO_DB: str
-
-    EARTHQUAKE_INFO_SERVER: str
-    EARTHQUAKE_INFO_PORT: str
-    EARTHQUAKE_INFO_USER: str
-    EARTHQUAKE_INFO_PASSWORD: str
-    EARTHQUAKE_INFO_DB: str
+    ALLOW_ORIGINS: list
+    ALLOW_ORIGIN_REGEX: str
 
     class RiskCategory(str, enum.Enum):
         CONTENTS = 'contents'

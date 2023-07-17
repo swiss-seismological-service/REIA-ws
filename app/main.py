@@ -13,21 +13,12 @@ app.include_router(riskassessment.router, prefix='/v1')
 app.include_router(calculation.router, prefix='/v1')
 
 
-origins = [
-    "http://localhost",
-    "http://localhost:5000",
-    "http://localhost:8000",
-    "http://localhost:8001",
-    "http://127.0.0.1",
-    "http://127.0.0.1:5000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8001"
-]
+origins = get_settings().ALLOW_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex='http.*://.*\\.ethz\\.ch.*',
+    allow_origin_regex=get_settings().ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
