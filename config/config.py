@@ -23,22 +23,6 @@ class Settings(BaseSettings):
         STRUCTURAL = 'structural'
 
     @property
-    def EARTHQUAKE_INFO(self) -> str:
-        return f'dbname={self.EARTHQUAKE_INFO_DB} ' \
-            f'user={self.EARTHQUAKE_INFO_USER} ' \
-            f'host={self.EARTHQUAKE_INFO_SERVER} ' \
-            f'password={self.EARTHQUAKE_INFO_PASSWORD} ' \
-            f'port={self.EARTHQUAKE_INFO_PORT}'
-
-    @property
-    def SCENARIO_INFO(self) -> str:
-        return f'dbname={self.SCENARIO_INFO_DB} ' \
-            f'user={self.SCENARIO_INFO_USER} ' \
-            f'host={self.SCENARIO_INFO_SERVER} ' \
-            f'password={self.SCENARIO_INFO_PASSWORD} ' \
-            f'port={self.SCENARIO_INFO_PORT}'
-
-    @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         return f"postgresql://{self.POSTGRES_USER}:" \
             f"{self.POSTGRES_PASSWORD}@" \
