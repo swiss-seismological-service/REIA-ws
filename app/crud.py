@@ -115,7 +115,7 @@ def read_aggregated_loss(db: Session,
 
     stmt = select(risk_sub.c.loss_value,
                   risk_sub.c.weight,
-                  risk_sub.c._losscalculationbranch_oid.label('branchid'),
+                  risk_sub.c._calculationbranch_oid.label('branchid'),
                   risk_sub.c.eventid,
                   agg_sub.c.name.label(aggregation_type)) \
         .select_from(risk_sub) \
@@ -182,7 +182,7 @@ def read_aggregated_damage(db: Session,
                   damage_sub.c.dg4_value.label('dg4_value'),
                   damage_sub.c.dg5_value.label('dg5_value'),
                   damage_sub.c.weight,
-                  damage_sub.c._damagecalculationbranch_oid.label('branchid'),
+                  damage_sub.c._calculationbranch_oid.label('branchid'),
                   damage_sub.c.eventid,
                   agg_sub.c.name.label(aggregation_type)) \
         .select_from(damage_sub) \
