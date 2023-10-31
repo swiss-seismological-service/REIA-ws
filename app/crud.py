@@ -1,5 +1,5 @@
-
 from datetime import datetime
+from uuid import UUID
 
 import pandas as pd
 from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
@@ -237,7 +237,7 @@ def read_risk_assessments(
     return stmt
 
 
-def read_risk_assessment(db: Session, oid: int) -> RiskAssessment:
+def read_risk_assessment(db: Session, oid: UUID) -> RiskAssessment:
     stmt = select(RiskAssessment).where(
         RiskAssessment._oid == oid)
     return db.execute(stmt).unique().scalar()

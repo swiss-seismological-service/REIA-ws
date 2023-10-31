@@ -1,5 +1,6 @@
 import base64
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ async def read_risk_assessments(originid: str | None = None,
 @router.get('/{oid}',
             response_model=RiskAssessmentSchema,
             response_model_exclude_none=True)
-async def read_risk_assessment(oid: int, db: Session = Depends(get_db)):
+async def read_risk_assessment(oid: UUID, db: Session = Depends(get_db)):
     '''
     Returns the requested RiskAssessment.
     '''

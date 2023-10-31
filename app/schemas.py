@@ -1,6 +1,7 @@
 import enum
 from datetime import datetime
 from typing import Any, Generic, List, Optional, Type, TypeVar
+from uuid import UUID
 
 from pydantic import BaseConfig, BaseModel, Field, create_model
 from pydantic.generics import GenericModel
@@ -114,7 +115,7 @@ class DamageCalculationSchema(CalculationSchema):
 
 
 class RiskAssessmentSchema(BaseModel):
-    oid: int = Field(..., alias='_oid')
+    oid: UUID = Field(..., alias='_oid')
     originid: str
 
     type: EEarthquakeType
