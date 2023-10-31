@@ -12,7 +12,10 @@ RUN apt-get update \
 
 
 COPY requirements.txt .
+COPY requirements-no-deps.txt .
+
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels-no -r requirements-no-deps.txt
 
 
 FROM python:3.10
@@ -24,9 +27,10 @@ RUN useradd --create-home python \
 
 USER python
 
+COPY --from=builder --chown=python:python /app/wheels-no /wheels-no
 COPY --from=builder --chown=python:python /app/wheels /wheels
-COPY --from=builder --chown=python:python /app/requirements.txt .
 
+RUN pip install --no-cache --user /wheels-no/*
 RUN pip install --no-cache --user /wheels/*
 
 ENV PYTHONUNBUFFERED="true" \
