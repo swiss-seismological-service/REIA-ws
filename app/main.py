@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from app.routers import calculation, damage, loss, riskassessment
 from config import get_settings
@@ -15,11 +16,12 @@ app.include_router(calculation.router, prefix='/v1')
 
 origins = get_settings().ALLOW_ORIGINS
 
-app.add_middleware(
-    CORSMiddleware,
+app = CORSMiddleware(
+    app=app,
     allow_origins=origins,
     allow_origin_regex=get_settings().ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
