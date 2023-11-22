@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -16,6 +16,7 @@ router = APIRouter(prefix='/loss', tags=['loss'])
             response_model_exclude_none=True)
 async def get_losses(calculation_id: int,
                      aggregation_type: str,
+                     request: Request,
                      loss_category: Settings.RiskCategory,
                      filter_tag_like: str | None = None,
                      format: ReturnFormats = ReturnFormats.JSON,

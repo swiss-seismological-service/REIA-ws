@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pandas import DataFrame
 from sqlalchemy.orm import Session
 
@@ -73,6 +73,7 @@ def calculate_damages(calculation_id: int,
             response_model=list[DamageValueStatisticsReportSchema],
             response_model_exclude_none=True)
 async def get_damage_report(
+        request: Request,
         statistics: Annotated[DataFrame, Depends(calculate_damages)],
         format: ReturnFormats = ReturnFormats.JSON,):
 
@@ -87,7 +88,8 @@ async def get_damage_report(
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
 async def get_damage(
-    statistics: Annotated[DataFrame, Depends(calculate_damages)],
+        request: Request,
+        statistics: Annotated[DataFrame, Depends(calculate_damages)],
         format: ReturnFormats = ReturnFormats.JSON,):
 
     if format == ReturnFormats.CSV:

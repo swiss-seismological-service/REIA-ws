@@ -2,7 +2,7 @@ import base64
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -14,7 +14,8 @@ router = APIRouter(prefix='/riskassessment', tags=['riskassessments'])
 
 @router.get('', response_model=PaginatedResponse[RiskAssessmentSchema],
             response_model_exclude_none=True)
-async def read_risk_assessments(originid: str | None = None,
+async def read_risk_assessments(request: Request,
+                                originid: str | None = None,
                                 starttime: datetime | None = None,
                                 endtime: datetime | None = None,
                                 published: bool | None = None,
@@ -37,7 +38,9 @@ async def read_risk_assessments(originid: str | None = None,
 @router.get('/{oid}',
             response_model=RiskAssessmentSchema,
             response_model_exclude_none=True)
-async def read_risk_assessment(oid: UUID, db: Session = Depends(get_db)):
+async def read_risk_assessment(oid: UUID,
+                               request: Request,
+                               db: Session = Depends(get_db)):
     '''
     Returns the requested RiskAssessment.
     '''

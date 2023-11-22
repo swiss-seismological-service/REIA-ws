@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -15,7 +15,8 @@ router = APIRouter(prefix='/calculation', tags=['calculations'])
             response_model=PaginatedResponse[LossCalculationSchema |
                                              DamageCalculationSchema],
             response_model_exclude_none=True)
-async def read_calculations(starttime: datetime | None = None,
+async def read_calculations(request: Request,
+                            starttime: datetime | None = None,
                             endtime: datetime | None = None,
                             limit: int = Query(50, ge=0),
                             offset: int = Query(0, ge=0),
@@ -31,6 +32,7 @@ async def read_calculations(starttime: datetime | None = None,
             response_model=LossCalculationSchema | DamageCalculationSchema,
             response_model_exclude_none=True)
 async def read_calculation(oid: int,
+                           request: Request,
                            db: Session = Depends(get_db)):
     '''
     Returns the requested calculation.
