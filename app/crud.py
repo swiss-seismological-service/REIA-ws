@@ -10,6 +10,7 @@ from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, with_polymorphic
 
+from app.utils import pandas_read_sql
 from config import Settings
 
 
@@ -88,7 +89,7 @@ def read_total_buildings(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pandas_read_sql(stmt, db)
 
 
 def read_aggregated_loss(db: Session,
@@ -136,7 +137,7 @@ def read_aggregated_loss(db: Session,
             risk_sub.c._calculation_oid == calculation_id,
             risk_sub.c._type == ECalculationType.LOSS
         ))
-    return pd.read_sql(stmt, db.get_bind())
+    return pandas_read_sql(stmt, db)
 
 
 def read_aggregationtags(db: Session, aggregation_type: str,
@@ -146,7 +147,7 @@ def read_aggregationtags(db: Session, aggregation_type: str,
         AggregationTag.name.like(tag_like) if tag_like else True
     ))
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pandas_read_sql(stmt, db)
 
 
 def read_aggregated_damage(db: Session,
@@ -205,7 +206,7 @@ def read_aggregated_damage(db: Session,
             damage_sub.c._type == ECalculationType.DAMAGE
         ))
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pandas_read_sql(stmt, db)
 
 
 def read_risk_assessments(
@@ -232,8 +233,6 @@ def read_risk_assessments(
     stmt = stmt.order_by(RiskAssessment.creationinfo_creationtime.desc())
 
     # using pagination and only returning query statement
-    # return db.execute(stmt).unique().scalars().all()
-
     return stmt
 
 
@@ -257,8 +256,6 @@ def read_calculations(db: Session, starttime: datetime | None,
     stmt = stmt.order_by(Calculation.creationinfo_creationtime.desc())
 
     # using pagination and only returning query statement
-    # return db.execute(stmt).unique().scalars().all()
-
     return stmt
 
 
@@ -290,4 +287,4 @@ def read_mean_losses(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pd.read_sql(stmt, db.get_bind())
+    return pandas_read_sql(stmt, db)
