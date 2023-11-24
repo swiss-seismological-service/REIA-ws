@@ -73,12 +73,17 @@ def calculate_damages(calculation_id: int,
             response_model=list[DamageValueStatisticsReportSchema],
             response_model_exclude_none=True)
 async def get_damage_report(
+        calculation_id: int,
+        damage_category: Settings.RiskCategory,
+        aggregation_type: str,
         request: Request,
         statistics: Annotated[DataFrame, Depends(calculate_damages)],
+        filter_tag_like: str | None = None,
+        sum: bool = False,
         format: ReturnFormats = ReturnFormats.JSON,):
 
     if format == ReturnFormats.CSV:
-        return csv_response(statistics, 'damage')
+        return csv_response('damage', locals())
 
     return [DamageValueStatisticsReportSchema.parse_obj(x)
             for x in statistics.to_dict('records')]
@@ -88,12 +93,17 @@ async def get_damage_report(
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
 async def get_damage(
+        calculation_id: int,
+        damage_category: Settings.RiskCategory,
+        aggregation_type: str,
         request: Request,
         statistics: Annotated[DataFrame, Depends(calculate_damages)],
+        filter_tag_like: str | None = None,
+        sum: bool = False,
         format: ReturnFormats = ReturnFormats.JSON,):
 
     if format == ReturnFormats.CSV:
-        return csv_response(statistics, 'damage')
+        return csv_response('damage', locals())
 
     return [DamageValueStatisticsSchema.parse_obj(x)
             for x in statistics.to_dict('records')]

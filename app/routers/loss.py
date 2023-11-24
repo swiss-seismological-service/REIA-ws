@@ -58,7 +58,7 @@ async def get_losses(calculation_id: int,
     statistics['category'] = loss_category
 
     if format == ReturnFormats.CSV:
-        return csv_response(statistics, 'loss')
+        return csv_response('loss', locals())
 
     return [LossValueStatisticsSchema.parse_obj(x)
             for x in statistics.to_dict('records')]

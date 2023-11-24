@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 from app.wquantile import weighted_quantile
+from config.names import (csv_names_aggregations, csv_names_categories,
+                          csv_names_sum)
 
 
 def pandas_read_sql(stmt, db):
@@ -33,8 +35,34 @@ def replace_path_param_type(app: FastAPI,
             app.add_api_route(path, endpoint, methods=methods)
 
 
-def csv_response(data: pd.DataFrame, filename: str) -> StreamingResponse:
-    output = data.to_csv(index=False)
+def csv_response(type: str, *args) -> StreamingResponse:
+    """
+    Generate descriptive CSV-names which can be edited using config.names.
+    """
+    args = args[0]
+
+    oid = args['calculation_id']
+    agg = args['aggregation_type']
+    filter = args['filter_tag_like']
+    category = args[f'{type}_category']
+
+    if args['sum']:
+        agg = csv_names_sum[agg] if agg in csv_names_sum else f'{agg}-sum'
+    else:
+        agg = csv_names_aggregations[agg] if agg in \
+            csv_names_aggregations else agg
+
+    category = csv_names_categories[type][category] if (
+        type in csv_names_categories and
+        category in csv_names_categories[type]) else category
+
+    filename = f"{type}_{oid}_" \
+               f"{agg}" \
+               f"{f'-{filter}' if filter else ''}" \
+               f"_{category}"
+
+    output = args['statistics'].to_csv(index=False)
+
     return StreamingResponse(
         iter([output]),
         media_type='text/csv',
