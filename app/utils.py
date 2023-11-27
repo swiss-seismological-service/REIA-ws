@@ -53,7 +53,7 @@ def csv_response(type: str, *args) -> StreamingResponse:
 
     if sum:
         data.drop(columns=['tag'], inplace=True)
-    data = rename_column_headers(data, type, category)
+    data = rename_column_headers(data, type, category, agg)
     output = data.to_csv(index=False)
 
     return StreamingResponse(
@@ -63,7 +63,7 @@ def csv_response(type: str, *args) -> StreamingResponse:
                  f"attachment;filename={filename}.csv"})
 
 
-def construct_csv_filename(type, oid, agg, filter, category, sum):
+def construct_csv_filename(type, oid, agg, filter, category, sum) -> str:
     if sum:
         agg = csv_names_sum[agg] if agg in csv_names_sum else f'{agg}-sum'
     else:
@@ -80,13 +80,16 @@ def construct_csv_filename(type, oid, agg, filter, category, sum):
         f"_{category}"
 
 
-def rename_column_headers(df: pd.DataFrame, type, category) -> pd.DataFrame:
+def rename_column_headers(
+        df: pd.DataFrame, type, category, agg) -> pd.DataFrame:
     mapping = csv_column_names[type][category] if (
         type in csv_column_names and
-        category in csv_column_names[type]) else None
-    if mapping:
-        return df.rename(columns=mapping)
-    return df
+        category in csv_column_names[type]) else {}
+
+    tag_mapping = csv_column_names['aggregation'][agg] if (
+        agg in csv_column_names['aggregation']) else {}
+
+    return df.rename(columns=mapping | tag_mapping)
 
 
 def aggregate_by_branch_and_event(

@@ -38,9 +38,13 @@ csv_names_aggregations = {}
 csv_names_sum = {}
 
 csv_column_names = {
+    'aggregation': {
+        'example_aggregation': {
+            'tag': 'tag'
+        }
+    },
     'damage': {
         'structural': {
-            'tag': 'tag',
             'dg1_mean': 'damage_grade_1_mean',
             'dg1_pc10': 'damage_grade_1_pc10',
             'dg1_pc90': 'damage_grade_1_pc90',
@@ -65,7 +69,6 @@ csv_column_names = {
     },
     'loss': {
         'structural': {
-            'tag': 'tag',
             'loss_mean': 'loss_mean',
             'loss_pc10': 'loss_pc10',
             'loss_pc90': 'loss_pc90',
