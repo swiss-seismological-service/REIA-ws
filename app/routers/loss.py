@@ -56,6 +56,7 @@ async def get_losses(calculation_id: int,
     statistics = calculate_statistics(db_result, aggregation_type)
 
     statistics['category'] = loss_category
+    statistics = statistics.round(2)
 
     if format == ReturnFormats.CSV:
         return csv_response('loss', locals())

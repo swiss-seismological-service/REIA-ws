@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 from app.wquantile import weighted_quantile
-from config.names import (csv_names_aggregations, csv_names_categories,
-                          csv_names_sum)
+from config.names import (csv_column_names, csv_names_aggregations,
+                          csv_names_categories, csv_names_sum)
 
 
 def pandas_read_sql(stmt, db):
@@ -45,8 +45,26 @@ def csv_response(type: str, *args) -> StreamingResponse:
     agg = args['aggregation_type']
     filter = args['filter_tag_like']
     category = args[f'{type}_category']
+    sum = args['sum']
 
-    if args['sum']:
+    filename = construct_csv_filename(type, oid, agg, filter, category, sum)
+    data = args['statistics']
+    data.drop(columns=['category'], inplace=True)
+
+    if sum:
+        data.drop(columns=['tag'], inplace=True)
+    data = rename_column_headers(data, type, category)
+    output = data.to_csv(index=False)
+
+    return StreamingResponse(
+        iter([output]),
+        media_type='text/csv',
+        headers={"Content-Disposition":
+                 f"attachment;filename={filename}.csv"})
+
+
+def construct_csv_filename(type, oid, agg, filter, category, sum):
+    if sum:
         agg = csv_names_sum[agg] if agg in csv_names_sum else f'{agg}-sum'
     else:
         agg = csv_names_aggregations[agg] if agg in \
@@ -56,18 +74,19 @@ def csv_response(type: str, *args) -> StreamingResponse:
         type in csv_names_categories and
         category in csv_names_categories[type]) else category
 
-    filename = f"{type}_{oid}_" \
-               f"{agg}" \
-               f"{f'-{filter}' if filter else ''}" \
-               f"_{category}"
+    return f"{type}_{oid}_" \
+        f"{agg}" \
+        f"{f'-{filter}' if filter else ''}" \
+        f"_{category}"
 
-    output = args['statistics'].to_csv(index=False)
 
-    return StreamingResponse(
-        iter([output]),
-        media_type='text/csv',
-        headers={"Content-Disposition":
-                 f"attachment;filename={filename}.csv"})
+def rename_column_headers(df: pd.DataFrame, type, category) -> pd.DataFrame:
+    mapping = csv_column_names[type][category] if (
+        type in csv_column_names and
+        category in csv_column_names[type]) else None
+    if mapping:
+        return df.rename(columns=mapping)
+    return df
 
 
 def aggregate_by_branch_and_event(

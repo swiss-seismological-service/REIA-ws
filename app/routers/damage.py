@@ -65,6 +65,10 @@ def calculate_damages(calculation_id: int,
 
     statistics['damage_percentage'] = statistics['damage_mean'] / \
         statistics['buildings'] * 100
+    statistics = statistics.round(2)
+
+    statistics = statistics.drop(columns=['merge_tag', aggregation_type])
+
     return statistics
 
 
