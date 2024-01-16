@@ -14,15 +14,15 @@ router = APIRouter(prefix='/riskassessment', tags=['riskassessments'])
 
 @router.get('', response_model=PaginatedResponse[RiskAssessmentSchema],
             response_model_exclude_none=True)
-async def read_risk_assessments(request: Request,
-                                originid: str | None = None,
-                                starttime: datetime | None = None,
-                                endtime: datetime | None = None,
-                                published: bool | None = None,
-                                preferred: bool | None = None,
-                                limit: int = Query(50, ge=0),
-                                offset: int = Query(0, ge=0),
-                                db: Session = Depends(get_db)):
+def read_risk_assessments(request: Request,
+                          originid: str | None = None,
+                          starttime: datetime | None = None,
+                          endtime: datetime | None = None,
+                          published: bool | None = None,
+                          preferred: bool | None = None,
+                          limit: int = Query(50, ge=0),
+                          offset: int = Query(0, ge=0),
+                          db: Session = Depends(get_db)):
     '''
     Returns a list of RiskAssessments.
     '''
@@ -38,9 +38,9 @@ async def read_risk_assessments(request: Request,
 @router.get('/{oid}',
             response_model=RiskAssessmentSchema,
             response_model_exclude_none=True)
-async def read_risk_assessment(oid: UUID,
-                               request: Request,
-                               db: Session = Depends(get_db)):
+def read_risk_assessment(oid: UUID,
+                         request: Request,
+                         db: Session = Depends(get_db)):
     '''
     Returns the requested RiskAssessment.
     '''

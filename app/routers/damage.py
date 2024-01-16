@@ -76,7 +76,7 @@ def calculate_damages(calculation_id: int,
             include_in_schema=False,
             response_model=list[DamageValueStatisticsReportSchema],
             response_model_exclude_none=True)
-async def get_damage_report(
+def get_damage_report(
         calculation_id: int,
         damage_category: Settings.RiskCategory,
         aggregation_type: str,
@@ -96,7 +96,7 @@ async def get_damage_report(
 @router.get("/{calculation_id}/{damage_category}/{aggregation_type}",
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
-async def get_damage(
+def get_damage(
         calculation_id: int,
         damage_category: Settings.RiskCategory,
         aggregation_type: str,

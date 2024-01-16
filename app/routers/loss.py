@@ -14,14 +14,14 @@ router = APIRouter(prefix='/loss', tags=['loss'])
 @router.get("/{calculation_id}/{loss_category}/{aggregation_type}",
             response_model=list[LossValueStatisticsSchema],
             response_model_exclude_none=True)
-async def get_losses(calculation_id: int,
-                     aggregation_type: str,
-                     request: Request,
-                     loss_category: Settings.RiskCategory,
-                     filter_tag_like: str | None = None,
-                     format: ReturnFormats = ReturnFormats.JSON,
-                     sum: bool = False,
-                     db: Session = Depends(get_db)):
+def get_losses(calculation_id: int,
+               aggregation_type: str,
+               request: Request,
+               loss_category: Settings.RiskCategory,
+               filter_tag_like: str | None = None,
+               format: ReturnFormats = ReturnFormats.JSON,
+               sum: bool = False,
+               db: Session = Depends(get_db)):
     """
     Returns a list of the loss for a specific category and aggregated
     by a specific aggregation type.
