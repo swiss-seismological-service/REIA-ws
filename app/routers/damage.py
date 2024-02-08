@@ -51,7 +51,8 @@ def calculate_damages(calculation_id: int,
                 status_code=404, detail="Damage calculation not found.")
 
     db_result = db_result.merge(
-        tags, how='outer', on=aggregation_type).fillna(0)
+        tags, how='outer', on=aggregation_type) \
+        .infer_objects(copy=False).fillna(0)
 
     if sum:
         db_result = aggregate_by_branch_and_event(db_result, aggregation_type)
