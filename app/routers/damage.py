@@ -2,10 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pandas import DataFrame
-from sqlalchemy.orm import Session
 
 from app import crud
-from app.database import get_db
+from app.database import DBSessionDep
 from app.schemas import (DamageValueStatisticsReportSchema,
                          DamageValueStatisticsSchema, ReturnFormats)
 from app.utils import (aggregate_by_branch_and_event, calculate_statistics,
@@ -15,22 +14,22 @@ from config import Settings
 router = APIRouter(prefix='/damage', tags=['damage'])
 
 
-def calculate_damages(calculation_id: int,
-                      aggregation_type: str,
-                      damage_category: Settings.RiskCategory,
-                      filter_tag_like: str | None = None,
-                      sum: bool = False,
-                      db: Session = Depends(get_db)):
+async def calculate_damages(calculation_id: int,
+                            aggregation_type: str,
+                            damage_category: Settings.RiskCategory,
+                            db: DBSessionDep,
+                            filter_tag_like: str | None = None,
+                            sum: bool = False):
 
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
-    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+    tags = await crud.read_aggregationtags(db, aggregation_type, like_tag)
 
     if tags.empty:
         raise HTTPException(
             status_code=404, detail="Aggregationtag not found.")
 
-    db_result = crud.read_aggregated_damage(
+    db_result = await crud.read_aggregated_damage(
         db, calculation_id,
         aggregation_type,
         damage_category,
@@ -40,13 +39,13 @@ def calculate_damages(calculation_id: int,
         db_result['dg2_value'] + db_result['dg3_value'] + \
         db_result['dg4_value'] + db_result['dg5_value']
 
-    db_buildings = crud.read_total_buildings(
+    db_buildings = await crud.read_total_buildings(
         db, calculation_id,
         aggregation_type,
         filter_like_tag=like_tag)
 
     if db_result.empty or db_buildings.empty:
-        if not crud.read_calculation(db, calculation_id):
+        if not await crud.read_calculation(db, calculation_id):
             raise HTTPException(
                 status_code=404, detail="Damage calculation not found.")
 
@@ -77,7 +76,7 @@ def calculate_damages(calculation_id: int,
             include_in_schema=False,
             response_model=list[DamageValueStatisticsReportSchema],
             response_model_exclude_none=True)
-def get_damage_report(
+async def get_damage_report(
         calculation_id: int,
         damage_category: Settings.RiskCategory,
         aggregation_type: str,
@@ -97,7 +96,7 @@ def get_damage_report(
 @router.get("/{calculation_id}/{damage_category}/{aggregation_type}",
             response_model=list[DamageValueStatisticsSchema],
             response_model_exclude_none=True)
-def get_damage(
+async def get_damage(
         calculation_id: int,
         damage_category: Settings.RiskCategory,
         aggregation_type: str,

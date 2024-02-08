@@ -3,14 +3,16 @@ from uuid import UUID
 
 import pandas as pd
 from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
-                            DamageCalculationBranch, DamageValue,
-                            ECalculationType, ELossCategory, ExposureModel,
-                            LossCalculation, LossValue, RiskAssessment,
-                            asset_aggregationtag, riskvalue_aggregationtag)
-from sqlalchemy import and_, func, select
-from sqlalchemy.orm import Session, with_polymorphic
+                            DamageCalculation, DamageCalculationBranch,
+                            DamageValue, ECalculationType, ELossCategory,
+                            ExposureModel, LossCalculation, LossValue,
+                            RiskAssessment, asset_aggregationtag,
+                            riskvalue_aggregationtag)
+from sqlalchemy import Select, and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectin_polymorphic, selectinload
 
-from app.utils import pandas_read_sql
+from app.database import pandas_read_sql
 from config import Settings
 
 
@@ -39,17 +41,18 @@ def aggregation_type_subquery(aggregation_type):
         AggregationTag.type == aggregation_type).subquery()
 
 
-def get_aggregation_types(db: Session):
+async def get_aggregation_types(db: AsyncSession):
     stmt = select(AggregationTag.type).distinct()
-    types = db.execute(stmt).scalars().all()
+    results = await db.execute(stmt)
+    types = results.scalars().all()
     edict = {}
     for t in types:
         edict[t.upper()] = t
     return edict
 
 
-def read_total_buildings_country(
-        db: Session, calculation_id: int) -> int | None:
+async def read_total_buildings_country(
+        db: AsyncSession, calculation_id: int) -> int | None:
     exp_sub = select(ExposureModel._oid) \
         .join(DamageCalculationBranch) \
         .join(Calculation) \
@@ -59,15 +62,16 @@ def read_total_buildings_country(
     stmt = select(func.sum(Asset.buildingcount).label('buildingcount')) \
         .select_from(Asset) \
         .where(Asset._exposuremodel_oid == exp_sub)
+    result = await db.execute(stmt)
+    return result.scalar()
 
-    return db.execute(stmt).scalar()
 
-
-def read_total_buildings(db: Session,
-                         calculation_id: int,
-                         aggregation_type: str,
-                         filter_tag: str | None = None,
-                         filter_like_tag: str | None = None) -> pd.DataFrame:
+async def read_total_buildings(db: AsyncSession,
+                               calculation_id: int,
+                               aggregation_type: str,
+                               filter_tag: str | None = None,
+                               filter_like_tag: str | None = None) \
+        -> pd.DataFrame:
 
     type_sub = aggregation_type_subquery(aggregation_type)
 
@@ -89,15 +93,15 @@ def read_total_buildings(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pandas_read_sql(stmt, db)
+    return await pandas_read_sql(stmt)
 
 
-def read_aggregated_loss(db: Session,
-                         calculation_id: int,
-                         aggregation_type: str,
-                         loss_category: Settings.RiskCategory,
-                         filter_tag: str | None = None,
-                         filter_like_tag: str | None = None) \
+async def read_aggregated_loss(db: AsyncSession,
+                               calculation_id: int,
+                               aggregation_type: str,
+                               loss_category: Settings.RiskCategory,
+                               filter_tag: str | None = None,
+                               filter_like_tag: str | None = None) \
         -> pd.DataFrame:
 
     loss_category = ELossCategory[loss_category.name]
@@ -137,25 +141,25 @@ def read_aggregated_loss(db: Session,
             risk_sub.c._calculation_oid == calculation_id,
             risk_sub.c._type == ECalculationType.LOSS
         ))
-    return pandas_read_sql(stmt, db)
+    return await pandas_read_sql(stmt)
 
 
-def read_aggregationtags(db: Session, aggregation_type: str,
-                         tag_like: str | None):
+async def read_aggregationtags(db: AsyncSession, aggregation_type: str,
+                               tag_like: str | None):
     stmt = select(AggregationTag.name.label(aggregation_type)).where(and_(
         AggregationTag.type == aggregation_type,
         AggregationTag.name.like(tag_like) if tag_like else True
     ))
 
-    return pandas_read_sql(stmt, db)
+    return await pandas_read_sql(stmt)
 
 
-def read_aggregated_damage(db: Session,
-                           calculation_id: int,
-                           aggregation_type: str,
-                           loss_category: Settings.RiskCategory,
-                           filter_tag: str | None = None,
-                           filter_like_tag: str | None = None) \
+async def read_aggregated_damage(db: AsyncSession,
+                                 calculation_id: int,
+                                 aggregation_type: str,
+                                 loss_category: Settings.RiskCategory,
+                                 filter_tag: str | None = None,
+                                 filter_like_tag: str | None = None) \
         -> pd.DataFrame:
 
     loss_category = ELossCategory[loss_category.name]
@@ -206,18 +210,19 @@ def read_aggregated_damage(db: Session,
             damage_sub.c._type == ECalculationType.DAMAGE
         ))
 
-    return pandas_read_sql(stmt, db)
+    return await pandas_read_sql(stmt)
 
 
 def read_risk_assessments(
-        db: Session,
         originid: str | None,
         starttime: datetime | None = None,
         endtime: datetime | None = None,
         published: bool | None = None,
-        preferred: bool | None = None) -> list[RiskAssessment]:
+        preferred: bool | None = None) -> Select:
 
-    stmt = select(RiskAssessment)
+    stmt = select(RiskAssessment) \
+        .options(selectinload(RiskAssessment.losscalculation),
+                 selectinload(RiskAssessment.damagecalculation))
     if starttime:
         stmt = stmt.filter(
             RiskAssessment.creationinfo_creationtime >= starttime)
@@ -236,16 +241,24 @@ def read_risk_assessments(
     return stmt
 
 
-def read_risk_assessment(db: Session, oid: UUID) -> RiskAssessment:
-    stmt = select(RiskAssessment).where(
-        RiskAssessment._oid == oid)
-    return db.execute(stmt).unique().scalar()
+async def read_risk_assessment(db: AsyncSession, oid: UUID) -> RiskAssessment:
+    stmt = select(RiskAssessment) \
+        .where(RiskAssessment._oid == oid) \
+        .options(selectinload(RiskAssessment.losscalculation),
+                 selectinload(RiskAssessment.damagecalculation))
+    result = await db.execute(stmt)
+    return result.unique().scalar()
 
 
-def read_calculations(db: Session, starttime: datetime | None,
-                      endtime: datetime | None) -> list[Calculation]:
-    all_calculations = with_polymorphic(Calculation, [LossCalculation])
-    stmt = select(all_calculations)
+def read_calculations(starttime: datetime | None,
+                      endtime: datetime | None) -> Select:
+
+    stmt = select(Calculation).options(
+        selectin_polymorphic(
+            Calculation, [LossCalculation, DamageCalculation]),
+        selectinload(LossCalculation.losscalculationbranches),
+        selectinload(DamageCalculation.damagecalculationbranches)
+    )
     if starttime:
         stmt = stmt.filter(
             Calculation.creationinfo_creationtime >= starttime)
@@ -259,18 +272,23 @@ def read_calculations(db: Session, starttime: datetime | None,
     return stmt
 
 
-def read_calculation(db: Session, id: int) -> Calculation:
-    all_calculations = with_polymorphic(Calculation, [LossCalculation])
-    stmt = select(all_calculations).where(Calculation._oid == id)
-    return db.execute(stmt).unique().scalar()
+async def read_calculation(db: AsyncSession, id: int) -> Calculation:
+    stmt = select(Calculation).options(
+        selectin_polymorphic(
+            Calculation, [LossCalculation, DamageCalculation]),
+        selectinload(LossCalculation.losscalculationbranches),
+        selectinload(DamageCalculation.damagecalculationbranches)
+    ).where(Calculation._oid == id)
+    results = await db.execute(stmt)
+    return results.unique().scalar()
 
 
-def read_mean_losses(db: Session,
-                     calculation_id,
-                     aggregation_type,
-                     loss_category,
-                     filter_tag: str | None = None,
-                     filter_like_tag: str | None = None):
+async def read_mean_losses(db: AsyncSession,
+                           calculation_id,
+                           aggregation_type,
+                           loss_category,
+                           filter_tag: str | None = None,
+                           filter_like_tag: str | None = None):
 
     filter = calculationid_filter(calculation_id, LossValue)
     filter &= losscategory_filter(loss_category, LossValue)
@@ -287,4 +305,4 @@ def read_mean_losses(db: Session,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return pandas_read_sql(stmt, db)
+    return await pandas_read_sql(stmt)
