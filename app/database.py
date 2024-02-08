@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from config import get_settings
 
 engine = create_engine(
-    get_settings().SQLALCHEMY_DATABASE_URL, pool_size=10, max_overflow=10)
+    get_settings().SQLALCHEMY_DATABASE_URL,
+    pool_size=10,
+    max_overflow=10)
+
 SessionLocal = sessionmaker(autocommit=False,
                             autoflush=False,
                             bind=engine)
