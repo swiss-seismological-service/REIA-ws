@@ -7,19 +7,6 @@ from config.names import (csv_column_names, csv_names_aggregations,
                           csv_names_categories, csv_names_sum)
 
 
-def pandas_read_sql(stmt, db):
-    """
-    wrapper around pandas read_sql to use sqlalchemy engine
-    and correctly close and dispose of the connections
-    afterwards.
-    """
-    en = db.get_bind()
-    with en.connect() as con:
-        df = pd.read_sql(stmt, con)
-    en.dispose()
-    return df
-
-
 def replace_path_param_type(app: FastAPI,
                             path_param: str,
                             new_type: type):

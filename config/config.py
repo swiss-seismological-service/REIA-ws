@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
-        return f"postgresql://{self.POSTGRES_USER}:" \
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:" \
             f"{self.POSTGRES_PASSWORD}@" \
             f"{self.POSTGRES_HOST}:" \
             f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
