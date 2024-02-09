@@ -85,7 +85,7 @@ async def pandas_read_sql(stmt):
     def read_sql_query(con, s):
         return pd.read_sql_query(s, con)
 
-    async with sessionmanager._engine.begin() as con:
+    async with sessionmanager.connect() as con:
         df = await con.run_sync(read_sql_query, stmt)
 
     return df
