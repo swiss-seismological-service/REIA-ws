@@ -111,36 +111,6 @@ class RiskAssessmentSchema(CreationInfoMixin):
     preferred: bool
     published: bool
 
-    # @root_validator(pre=True)
-    # @model_validator(mode='before')
-    # def parse_obj(cls, values):
-    #     print(values.__pydantic_extra__)
-    # print(cls.__pydantic_extra__)
-    # print(values.__pydantic_extra__)
-    #     def get(self, key: str, default: Any) -> Any:
-    # if the key-col mapping is 1:1 just return the value
-    # if hasattr(cls._obj, key):
-    #     return getattr(self._obj, key, default)
-
-    # # get this SQLAlchemy objects' column names.
-    # inspected = inspect(type(self._obj))
-    # cols = [c.name for c in inspected.columns]
-    # cols += inspected.relationships.keys()
-
-    # # else it's probably a sub value
-    # # get all column names which are present for this key
-    # elem = [k for k in cols if k.startswith(f'{key}_')]
-    # if elem:
-    #     # create a dict for the sub value
-    #     return_dict = {}
-    #     for k in elem:
-    #         return_dict[k.partition(
-    #             '_')[-1]] = getattr(self._obj, k, default)
-    #     return return_dict
-    # else:
-    #     return default
-    # return values
-
 
 class RiskValue(Model):
     category: Settings.RiskCategory
