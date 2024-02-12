@@ -63,10 +63,6 @@ async def calculate_damages(calculation_id: int,
     statistics = merge_statistics_to_buildings(
         statistics, db_buildings, aggregation_type)
 
-    statistics = statistics.round(5)
-
-    statistics.drop(columns=[aggregation_type], inplace=True)
-
     return statistics
 
 
