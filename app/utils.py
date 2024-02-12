@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 
 from app.wquantile import weighted_quantile
 from config.names import (csv_column_names, csv_names_aggregations,
-                          csv_names_categories, csv_names_sum)
+                          csv_names_categories, csv_names_sum, csv_round)
 
 
 def replace_path_param_type(app: FastAPI,
@@ -36,11 +36,15 @@ def csv_response(type: str, *args) -> StreamingResponse:
 
     filename = construct_csv_filename(type, oid, agg, filter, category, sum)
     data = args['statistics']
+
     data.drop(columns=['category'], inplace=True)
 
     if sum:
         data.drop(columns=['tag'], inplace=True)
     data = rename_column_headers(data, type, category, agg)
+
+    data = data.round(csv_round)
+
     output = data.to_csv(index=False)
 
     return StreamingResponse(
@@ -110,12 +114,11 @@ def calculate_statistics(
 
         base_name = col.split('_')[0]
 
-        data['weighted'] = data['weight'] * \
-            data[col]
+        data['weighted'] = data['weight'] * data[col]
 
         # initialize with mean
-        statistics[f'{base_name}_mean'] = data.groupby(
-            aggregation_type)['weighted'].sum()
+        statistics[f'{base_name}_mean'] = \
+            data.groupby(aggregation_type)['weighted'].sum()
 
         # calculate quantiles
         statistics[f'{base_name}_pc10'], statistics[f'{base_name}_pc90'] = \
@@ -123,11 +126,10 @@ def calculate_statistics(
                 lambda x: weighted_quantile(
                     x[col], (0.1, 0.9), x['weight'])))
 
-        # drop intermediate column again form original df
+        # drop intermediate column again, form original df
         data.drop(columns=['weighted'])
 
-    statistics = statistics.rename_axis(
-        'tag').reset_index()
+    statistics = statistics.rename_axis('tag').reset_index()
 
     statistics['tag'] = statistics['tag'].apply(lambda x: [x] if x else [])
 
@@ -137,8 +139,11 @@ def calculate_statistics(
 def merge_statistics_to_buildings(statistics: pd.DataFrame,
                                   buildings: pd.DataFrame,
                                   aggregation_type: str) -> pd.DataFrame:
+
     statistics['merge_tag'] = statistics['tag'].apply(
         lambda x: ''.join(sorted(x)))
+
+    # add sum of buildings to dataframe
     buildings = pd.concat([
         buildings,
         pd.DataFrame([{'buildingcount': buildings['buildingcount'].sum(),
@@ -150,5 +155,7 @@ def merge_statistics_to_buildings(statistics: pd.DataFrame,
         how='inner',
         left_on='merge_tag',
         right_on=aggregation_type).fillna(0)
+
+    statistics.drop(columns=['merge_tag'], inplace=True)
 
     return statistics

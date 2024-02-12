@@ -123,13 +123,6 @@ class LossValueStatisticsSchema(RiskValue):
     loss_pc90: float
 
 
-class DamageValueStatisticsReportSchema(RiskValue):
-    damage_mean: float
-    damage_pc10: float
-    damage_pc90: float
-    damage_percentage: float
-
-
 class DamageValueStatisticsSchema(RiskValue):
     dg1_mean: float
     dg1_pc10: float
