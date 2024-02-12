@@ -104,7 +104,7 @@ def aggregate_by_branch_and_event(
 
 def calculate_statistics(
         data: pd.DataFrame, aggregation_type: str) -> pd.DataFrame:
-    # either loss_value or damage_value
+    # either loss_value or dg*_value
     value_column = [i for i in data.columns if 'value' in i]
 
     statistics = pd.DataFrame()
@@ -133,6 +133,8 @@ def calculate_statistics(
 
     statistics['tag'] = statistics['tag'].apply(lambda x: [x] if x else [])
 
+    statistics = statistics.round(5)
+
     return statistics
 
 
@@ -156,6 +158,7 @@ def merge_statistics_to_buildings(statistics: pd.DataFrame,
         left_on='merge_tag',
         right_on=aggregation_type).fillna(0)
 
-    statistics.drop(columns=['merge_tag'], inplace=True)
+    # remove columns which were added in this method
+    statistics.drop(columns=['merge_tag', aggregation_type], inplace=True)
 
     return statistics
