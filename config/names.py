@@ -3,6 +3,9 @@ from config import Settings
 # MAPPINGS for CSV filenames
 # filename {type}_{oid}_{aggregation}-{filter?}_{category}.csv
 
+# csv round to precision
+csv_round = 1
+
 # category names
 csv_names_categories = {
     'damage': {
@@ -60,10 +63,6 @@ csv_column_names = {
             'dg5_mean': 'damage_grade_5_mean',
             'dg5_pc10': 'damage_grade_5_pc10',
             'dg5_pc90': 'damage_grade_5_pc90',
-            'damage_mean': 'damage_mean',
-            'damage_pc10': 'damage_pc10',
-            'damage_pc90': 'damage_pc90',
-            'damage_percentage': 'damage_percentage',
             'buildings': 'buildings',
         }
     },
