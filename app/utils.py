@@ -73,12 +73,19 @@ def construct_csv_filename(type, oid, agg, filter, category, sum) -> str:
 
 def rename_column_headers(
         df: pd.DataFrame, type, category, agg) -> pd.DataFrame:
+
     mapping = csv_column_names[type][category] if (
         type in csv_column_names and
         category in csv_column_names[type]) else {}
 
     tag_mapping = csv_column_names['aggregation'][agg] if (
         agg in csv_column_names['aggregation']) else {}
+
+    # build list of dictionary keys and apply order to df columns
+    # as well as unselecting columns which are not present in naming dict
+    tag_name = list(tag_mapping.keys()) or ['tag']
+    order = tag_name + [m for m in mapping.keys() if m in df.columns]
+    df = df[order]
 
     return df.rename(columns=mapping | tag_mapping)
 
