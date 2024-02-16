@@ -3,11 +3,11 @@ from uuid import UUID
 
 import pandas as pd
 from reia.datamodel import (AggregationTag, Asset, Calculation,  # noqa
-                            DamageCalculation, DamageCalculationBranch,
-                            DamageValue, ECalculationType, ELossCategory,
-                            ExposureModel, LossCalculation, LossValue,
-                            RiskAssessment, asset_aggregationtag,
-                            riskvalue_aggregationtag)
+                            CalculationBranch, DamageCalculation,
+                            DamageCalculationBranch, DamageValue,
+                            ECalculationType, ELossCategory, ExposureModel,
+                            LossCalculation, LossValue, RiskAssessment,
+                            asset_aggregationtag, riskvalue_aggregationtag)
 from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectin_polymorphic, selectinload
@@ -145,13 +145,24 @@ async def read_aggregated_loss(db: AsyncSession,
 
 
 async def read_aggregationtags(db: AsyncSession, aggregation_type: str,
-                               tag_like: str | None):
+                               calculation_id: int, tag_like: str | None):
+    stmt = select(ExposureModel._oid) \
+        .join(CalculationBranch) \
+        .join(Calculation) \
+        .where(Calculation._oid == calculation_id)
+
+    exposuremodel_oids = await db.execute(stmt)
+    exposuremodel_oids = exposuremodel_oids.unique().scalars().all()
+
     stmt = select(AggregationTag.name.label(aggregation_type)).where(and_(
         AggregationTag.type == aggregation_type,
-        AggregationTag.name.like(tag_like) if tag_like else True
+        AggregationTag.name.like(tag_like) if tag_like else True,
+        AggregationTag._exposuremodel_oid.in_(exposuremodel_oids)
     ))
 
-    return await pandas_read_sql(stmt)
+    df = await pandas_read_sql(stmt)
+    df.drop_duplicates(inplace=True)
+    return df
 
 
 async def read_aggregated_damage(db: AsyncSession,

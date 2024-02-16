@@ -30,7 +30,8 @@ async def get_losses(calculation_id: int,
 
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
-    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+    tags = crud.read_aggregationtags(
+        db, aggregation_type, calculation_id, like_tag)
 
     db_result = crud.read_aggregated_loss(db,
                                           calculation_id,
@@ -49,6 +50,7 @@ async def get_losses(calculation_id: int,
             raise HTTPException(
                 status_code=404, detail="Loss calculation not found.")
 
+    # merge with aggregationtags to add missing (no loss) aggregationtags
     db_result = db_result.merge(
         tags, how='outer', on=aggregation_type) \
         .infer_objects(copy=False).fillna(0)
