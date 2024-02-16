@@ -23,7 +23,8 @@ async def calculate_damages(calculation_id: int,
 
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
-    tags = crud.read_aggregationtags(db, aggregation_type, like_tag)
+    tags = crud.read_aggregationtags(
+        db, aggregation_type, calculation_id, like_tag)
 
     db_result = crud.read_aggregated_damage(
         db, calculation_id,
