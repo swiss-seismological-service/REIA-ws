@@ -83,8 +83,10 @@ def rename_column_headers(
 
     # build list of dictionary keys and apply order to df columns
     # as well as unselecting columns which are not present in naming dict
-    tag_name = list(tag_mapping.keys()) or ['tag']
+    tag_name = list(tag_mapping.keys()) or \
+        ['tag'] if 'tag' in df.columns else []
     order = tag_name + [m for m in mapping.keys() if m in df.columns]
+
     df = df[order]
 
     return df.rename(columns=mapping | tag_mapping)
