@@ -1,4 +1,5 @@
 # REIA-ws
+©2024 ETH Zurich
 
 API for the data from the rapid earthquake risk assessment.
 
