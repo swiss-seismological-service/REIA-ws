@@ -1,4 +1,3 @@
-import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -23,22 +22,19 @@ async def calculate_damages(calculation_id: int,
 
     like_tag = f'%{filter_tag_like}%' if filter_tag_like else None
 
-    tags = crud.read_aggregationtags(
+    tags = await crud.read_aggregationtags(
         db, aggregation_type, calculation_id, like_tag)
 
-    db_result = crud.read_aggregated_damage(
+    db_result = await crud.read_aggregated_damage(
         db, calculation_id,
         aggregation_type,
         damage_category,
         filter_like_tag=like_tag)
 
-    db_buildings = crud.read_total_buildings(
+    db_buildings = await crud.read_total_buildings(
         db, calculation_id,
         aggregation_type,
         filter_like_tag=like_tag)
-
-    [tags, db_result, db_buildings] = \
-        await asyncio.gather(tags, db_result, db_buildings)
 
     if tags.empty:
         raise HTTPException(

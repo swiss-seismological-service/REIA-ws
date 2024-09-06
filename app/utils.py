@@ -175,3 +175,13 @@ def merge_statistics_to_buildings(statistics: pd.DataFrame,
     statistics.drop(columns=['merge_tag', aggregation_type], inplace=True)
 
     return statistics
+
+
+async def pandas_read_sql(stmt, session):
+    """
+    Get a pandas dataframe from a SQL statement.
+    """
+    result = await session.execute(stmt)
+    rows = result.fetchall()
+    columns = result.keys()
+    return pd.DataFrame(rows, columns=columns)

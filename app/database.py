@@ -1,16 +1,17 @@
 import contextlib
 from typing import Annotated, Any, AsyncIterator
 
-import pandas as pd
 from fastapi import Depends
 from sqlalchemy import Select, func, select
-from sqlalchemy.ext.asyncio import (AsyncConnection, AsyncSession,
+from sqlalchemy.ext.asyncio import (AsyncAttrs, AsyncConnection, AsyncSession,
                                     async_sessionmaker, create_async_engine)
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from config import get_settings
 
-Base = declarative_base()
+
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
 
 
 class DatabaseSessionManager:
@@ -18,7 +19,7 @@ class DatabaseSessionManager:
         self._engine = create_async_engine(
             host, pool_size=10, max_overflow=5, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(
-            autocommit=False, autoflush=False, bind=self._engine)
+            autoflush=False, bind=self._engine)
 
     async def close(self):
         if self._engine is None:
@@ -74,18 +75,3 @@ async def paginate(
         'items': [todo for todo in await session.scalars(query.limit(limit)
                                                          .offset(offset))]
     }
-
-
-async def pandas_read_sql(stmt):
-    """
-    wrapper around pandas read_sql to use sqlalchemy engine
-    and correctly close and dispose of the connections
-    afterwards.
-    """
-    def read_sql_query(con, s):
-        return pd.read_sql_query(s, con)
-
-    async with sessionmanager.connect() as con:
-        df = await con.run_sync(read_sql_query, stmt)
-
-    return df

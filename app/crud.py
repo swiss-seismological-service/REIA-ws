@@ -12,7 +12,7 @@ from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectin_polymorphic, selectinload
 
-from app.database import pandas_read_sql
+from app.utils import pandas_read_sql
 from config import Settings
 
 
@@ -93,7 +93,7 @@ async def read_total_buildings(db: AsyncSession,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return await pandas_read_sql(stmt)
+    return await pandas_read_sql(stmt, db)
 
 
 async def read_aggregated_loss(db: AsyncSession,
@@ -141,7 +141,7 @@ async def read_aggregated_loss(db: AsyncSession,
             risk_sub.c._calculation_oid == calculation_id,
             risk_sub.c._type == ECalculationType.LOSS
         ))
-    return await pandas_read_sql(stmt)
+    return await pandas_read_sql(stmt, db)
 
 
 async def read_aggregationtags(db: AsyncSession, aggregation_type: str,
@@ -160,7 +160,7 @@ async def read_aggregationtags(db: AsyncSession, aggregation_type: str,
         AggregationTag._exposuremodel_oid.in_(exposuremodel_oids)
     ))
 
-    df = await pandas_read_sql(stmt)
+    df = await pandas_read_sql(stmt, db)
     df.drop_duplicates(inplace=True)
     return df
 
@@ -221,7 +221,7 @@ async def read_aggregated_damage(db: AsyncSession,
             damage_sub.c._type == ECalculationType.DAMAGE
         ))
 
-    return await pandas_read_sql(stmt)
+    return await pandas_read_sql(stmt, db)
 
 
 def read_risk_assessments(
@@ -316,4 +316,4 @@ async def read_mean_losses(db: AsyncSession,
         .where(filter) \
         .group_by(type_sub.c.name)
 
-    return await pandas_read_sql(stmt)
+    return await pandas_read_sql(stmt, db)
